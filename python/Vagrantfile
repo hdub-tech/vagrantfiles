@@ -1,25 +1,25 @@
-#          Copyright H Dub (hdub-tech) 2024
-# Distributed under the Boost Software License, Version 1.0.
-#    (See accompanying file LICENSE_1_0.txt or copy at
-#          https://www.boost.org/LICENSE_1_0.txt)
-
+#                     Copyright H Dub (hdub-tech) 2024
+#        Distributed under the Boost Software License, Version 1.0.
+# See accompanying file LICENSE or copy at https://www.boost.org/LICENSE_1_0.txt
+#                     Python template - Version 1.0
+#
 # ####################################################################### #
-# vvvvvvvvvvvvvvvvvvvvvvv UPDATE THIS BLOCK BELOW vvvvvvvvvvvvvvvvvvvvvvv #
+#                         UPDATE THIS BLOCK BELOW                         #
 # ####################################################################### #
-# Get basename of current directory to be project name, or edit to hardcode
-# This will be the hostname and part of the VM name
+# Get basename of current directory to be project name, or edit to hardcode.
+# This will be the hostname and part of the VM name.
 $project_name = File.basename(__dir__)
 #$project_name = "hardcoded-name"
 
 # Set the desired Python version here
 $python_version = "3.12"
-
-# A new .venv/vagrant-py$python_version directory will be created at the
-# project level and used unless this is changed to false or the line
-# deleted/commented. The other venv variables should be acceptable at defaults
-# If the directory exists, it will not be touched.
-$create_new_project_venv = true
 $python_version_abbrev = "py#{$python_version.split('.').first(2).join('')}"  # ex) py312
+
+# A new .venv/vagrant-pyNNN directory will be created at the project level
+# and used unless this is changed to false or the line deleted/commented. The
+# other venv variables should be acceptable at defaults. If the directory exists,
+# it will not be touched.
+$create_new_project_venv = true
 $venv_dir = "/vagrant/.venv/vagrant-#{$python_version_abbrev}"
 $venv_prompt = ".venv #{$project_name}-#{$python_version_abbrev}"
 
@@ -34,7 +34,7 @@ $project_setup_script = <<~'PROJECT_SCRIPT'
   cd /vagrant  # Leave if you need to run commands from your project dir
 PROJECT_SCRIPT
 # ####################################################################### #
-# ^^^^^^^^^^^^^^^^^^^^^^^ UPDATE THIS BLOCK ABOVE ^^^^^^^^^^^^^^^^^^^^^^^ #
+#                         UPDATE THIS BLOCK ABOVE                         #
 # ####################################################################### #
 
 Vagrant.configure("2") do |config|
