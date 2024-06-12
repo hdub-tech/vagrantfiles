@@ -1,0 +1,108 @@
+#          Copyright H Dub (hdub-tech) 2024
+# Distributed under the Boost Software License, Version 1.0.
+#    (See accompanying file LICENSE_1_0.txt or copy at
+#          https://www.boost.org/LICENSE_1_0.txt)
+
+# ####################################################################### #
+# vvvvvvvvvvvvvvvvvvvvvvv UPDATE THIS BLOCK BELOW vvvvvvvvvvvvvvvvvvvvvvv #
+# ####################################################################### #
+# Get basename of current directory to be project name, or edit to hardcode
+# This will be the hostname and part of the VM name
+$project_name = File.basename(__dir__)
+#$project_name = "hardcoded-name"
+
+# Set the desired Python version here
+$python_version = "3.12"
+
+# A new .venv/vagrant-py$python_version directory will be created at the
+# project level and used unless this is changed to false or the line
+# deleted/commented. The other venv variables should be acceptable at defaults
+# If the directory exists, it will not be touched.
+$new_project_venv = true
+$python_version_abbrev = "py#{$python_version.split('.').first(2).join('')}"  # ex) py312
+$venv_dir = "/vagrant/.venv/vagrant-#{$python_version_abbrev}"
+$venv_prompt = ".venv #{$project_name}-#{$python_version_abbrev}"
+
+# Space separated list of system packages needed for this project. 
+$apt_packages = "git vim shellcheck"
+
+# Project dependencies setup script
+$project_setup_script = <<-'PROJECT_SCRIPT'
+  # NOTE: pip is already upgraded for you.
+  # Put your commands after THIS LINE to install project dependencies:
+
+  # Copy this script to the project directory in case it needs to be run again, excluding this comment/cmd
+  cat /tmp/vagrant-shell | head -n -2 | sed -e '1i#!/usr/bin/env bash' | tee /vagrant/vagrant-project-setup.sh  # delib no -a
+PROJECT_SCRIPT
+# ####################################################################### #
+# ^^^^^^^^^^^^^^^^^^^^^^^ UPDATE THIS BLOCK ABOVE ^^^^^^^^^^^^^^^^^^^^^^^ #
+# ####################################################################### #
+
+Vagrant.configure("2") do |config|
+
+  # Name the VM after the project and Vagrant instance type
+  config.vm.define "#{$project_name}-debian12-bookworm" do |dbw|
+    # Official Debian image
+    dbw.vm.box = "debian/bookworm64"
+    dbw.vm.hostname = $project_name
+
+    # VirtualBox configuration
+    dbw.vm.provider "virtualbox" do |v|
+      # UI name in VirtualBox
+      v.name = "#{$project_name}-debian12-bookworm"
+    end
+
+    # Install requested apt packages
+    dbw.vm.provision "Install specified apt packages [#{$apt_packages}]", type: "shell", inline: <<-APT_SCRIPT
+      apt-get update
+      apt-get --yes upgrade
+      apt-get --yes install #{$apt_packages}
+    APT_SCRIPT
+
+    # Install apt dependencies for all Python modules and install/setup pyenv
+    dbw.vm.provision "Install Python apt dependencies and install/setup pyenv", type: "shell", inline: <<-'PYENV_SETUP_SCRIPT'
+      apt-get install -y curl git gcc make zlib1g-dev libssl-dev libffi-dev libsqlite3-dev libbz2-dev libreadline-dev liblzma-dev
+      # Install pyenv if not already there
+      su -l vagrant -c "if [ ! -e ~/.pyenv ]; then curl https://pyenv.run | bash; fi"
+      # The BASH Heredocs must use tabs: https://www.shellcheck.net/wiki/SC1040
+      su -l vagrant <<-'BASH_COMMAND'
+		cat <<-'PYRC' | tee ~/.pyenvrc  # Deliberate no -a
+			export PYENV_ROOT="$HOME/.pyenv"
+			command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+			eval "$(pyenv init -)"
+		PYRC
+		# Add "source .pyenvrc" to bashrc only if not already there
+		if ! grep pyenvrc ~/.bashrc; then echo "source ~/.pyenvrc" | tee -a ~/.bashrc; fi
+	BASH_COMMAND
+    PYENV_SETUP_SCRIPT
+
+    # Install specified Python version using pyenv and set at /vagrant/.python-version
+    dbw.vm.provision "Install Python #{$python_version} and set as local project version", type: "shell", inline: <<-PYENV_INSTALL_SCRIPT
+      su -l vagrant <<-BASH_COMMAND
+		source ~/.pyenvrc
+		pyenv install --skip-existing #{$python_version}
+		cd /vagrant
+		pyenv local #{$python_version}
+	BASH_COMMAND
+    PYENV_INSTALL_SCRIPT
+
+    # Create and setup venv, if specified
+    if $new_project_venv
+      dbw.vm.provision "Create venv and activate by default on login", type: "shell", inline: <<-VENV_SETUP_SCRIPT
+		su -l vagrant <<-BASH_COMMAND
+			source ~/.pyenvrc
+			cd /vagrant
+			if [ -e #{$venv_dir} ]; then
+				echo "#{$venv_dir} EXISTS - SKIPPING VENV CREATION"
+			else
+				python -m venv --upgrade-deps --prompt "#{$venv_prompt}" #{$venv_dir}
+			fi
+			if ! grep activate ~/.pyenvrc; then echo \"source #{$venv_dir}/bin/activate\" >> ~/.pyenvrc; fi
+		BASH_COMMAND
+	VENV_SETUP_SCRIPT
+    end
+ 
+    # Run project specific setup script
+    dbw.vm.provision "Run project setup script", type: "shell", inline: $project_setup_script
+  end
+end
