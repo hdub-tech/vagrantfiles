@@ -1,0 +1,7 @@
+# Personal environment related files
+.python-version
+.vagrant/
+.venv/
+
+# File generated in some templates
+vagrant-project-setup.sh
