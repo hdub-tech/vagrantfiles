@@ -29,9 +29,12 @@ $apt_packages = "git vim shellcheck"
 # Project dependencies setup script
 $project_setup_script = <<~'PROJECT_SCRIPT'
   # PUT YOUR COMMANDS HERE TO INSTALL PROJECT DEPENDENCIES AND SET YOUR NICITIES.
-  # NOTE: pip is already upgraded for you. Feel free to remove what you don't want/need
-  echo "cd /vagrant" >> ~/.bashrc  # Start in the project/mounted dir at login
-  cd /vagrant  # Leave if you need to run commands from your project dir
+  # NOTE: pip is already upgraded for you. Feel free to remove what you don't want/need.
+  set -e                           # Exit on error
+  # Always start in the project/mounted dir at login
+  if ! grep "cd /vagrant" ~/.bashrc; then echo "cd /vagrant" >> ~/.bashrc; fi
+  cd /vagrant                      # Change to the project/mounted dir
+  source ~/.pyenvrc                # Use the just installed python and activate $venv_dir
 PROJECT_SCRIPT
 # ####################################################################### #
 #                         UPDATE THIS BLOCK ABOVE                         #
@@ -60,7 +63,7 @@ Vagrant.configure("2") do |config|
                             libbz2-dev libreadline-dev liblzma-dev
     APT_SCRIPT
 
-    # Install apt dependencies for all Python modules and install/setup pyenv
+    # Install and setup pyenv
     dbw.vm.provision "Install and setup pyenv", type: "shell", privileged: false, inline: <<~'PYENV_SETUP_SCRIPT'
       set -e
       # Install pyenv if not already there
@@ -108,8 +111,6 @@ Vagrant.configure("2") do |config|
  
     # Run project specific setup script
     dbw.vm.provision "Run project setup script", type: "shell", privileged: false, inline: <<~PROJECT_SETUP_SCRIPT
-      set -e
-      source ~/.pyenvrc
       #{$project_setup_script}
       echo "INFO: Copying this script to the project directory in case it needs to be run again, excluding this comment/cmd"
       cat /tmp/vagrant-shell | head -n -2 | sed -e '1i#!/usr/bin/env bash' | tee /vagrant/vagrant-project-setup.sh  # delib no -a
