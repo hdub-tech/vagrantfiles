@@ -28,11 +28,10 @@ $apt_packages = "git vim shellcheck"
 
 # Project dependencies setup script
 $project_setup_script = <<~'PROJECT_SCRIPT'
-  # PUT YOUR COMMANDS HERE TO INSTALL PROJECT DEPENDENCIES
-  # NOTE: pip is already upgraded for you.
-
-  # Copy this script to the project directory in case it needs to be run again, excluding this comment/cmd
-  cat /tmp/vagrant-shell | head -n -2 | sed -e '1i#!/usr/bin/env bash' | tee /vagrant/vagrant-project-setup.sh  # delib no -a
+  # PUT YOUR COMMANDS HERE TO INSTALL PROJECT DEPENDENCIES AND SET YOUR NICITIES.
+  # NOTE: pip is already upgraded for you. Feel free to remove what you don't want/need
+  echo "cd /vagrant" >> ~/.bashrc  # Start in the project/mounted dir at login
+  cd /vagrant  # Leave if you need to run commands from your project dir
 PROJECT_SCRIPT
 # ####################################################################### #
 # ^^^^^^^^^^^^^^^^^^^^^^^ UPDATE THIS BLOCK ABOVE ^^^^^^^^^^^^^^^^^^^^^^^ #
@@ -63,8 +62,15 @@ Vagrant.configure("2") do |config|
 
     # Install apt dependencies for all Python modules and install/setup pyenv
     dbw.vm.provision "Install and setup pyenv", type: "shell", privileged: false, inline: <<~'PYENV_SETUP_SCRIPT'
+      set -e
       # Install pyenv if not already there
-      su -l vagrant -c "if [ ! -e ~/.pyenv ]; then curl https://pyenv.run | bash; fi"
+      if [ ! -e ~/.pyenv ]; then
+        # Split up due to noisy unnecessary stderr on both commands
+        curl --silent --output /tmp/pyenv.run https://pyenv.run
+        bash /tmp/pyenv.run 2>&1
+      else
+        echo "WARNING: ~/.pyenv exists - Skipping pyenv installation" 1>&2
+      fi
 	# The BASH Heredocs must use tabs: https://www.shellcheck.net/wiki/SC1040
         echo "INFO: Creating ~/.pyenrc to be sourced in ~/.bashrc with contents:"
 	cat <<-'PYRC' | tee ~/.pyenvrc  # Deliberate no -a
@@ -78,6 +84,7 @@ Vagrant.configure("2") do |config|
 
     # Install specified Python version using pyenv and set at /vagrant/.python-version
     dbw.vm.provision "Install Python #{$python_version} and set as local project version", type: "shell", privileged: false, inline: <<~PYENV_INSTALL_SCRIPT
+      set -e
       source ~/.pyenvrc
       pyenv install --skip-existing #{$python_version} 2>&1
       cd /vagrant
@@ -87,6 +94,7 @@ Vagrant.configure("2") do |config|
     # Create and setup venv, if specified
     if $create_new_project_venv
       dbw.vm.provision "Create venv and activate by default on login", type: "shell", privileged: false, inline: <<~VENV_SETUP_SCRIPT
+        set -e
         source ~/.pyenvrc
         cd /vagrant
         if [ -e #{$venv_dir} ]; then
@@ -100,7 +108,11 @@ Vagrant.configure("2") do |config|
  
     # Run project specific setup script
     dbw.vm.provision "Run project setup script", type: "shell", privileged: false, inline: <<~PROJECT_SETUP_SCRIPT
+      set -e
+      source ~/.pyenvrc
       #{$project_setup_script}
+      echo "INFO: Copying this script to the project directory in case it needs to be run again, excluding this comment/cmd"
+      cat /tmp/vagrant-shell | head -n -2 | sed -e '1i#!/usr/bin/env bash' | tee /vagrant/vagrant-project-setup.sh  # delib no -a
     PROJECT_SETUP_SCRIPT
   end
 end
