@@ -18,7 +18,7 @@ $python_version = "3.12"
 # project level and used unless this is changed to false or the line
 # deleted/commented. The other venv variables should be acceptable at defaults
 # If the directory exists, it will not be touched.
-$new_project_venv = true
+$create_new_project_venv = true
 $python_version_abbrev = "py#{$python_version.split('.').first(2).join('')}"  # ex) py312
 $venv_dir = "/vagrant/.venv/vagrant-#{$python_version_abbrev}"
 $venv_prompt = ".venv #{$project_name}-#{$python_version_abbrev}"
@@ -27,9 +27,9 @@ $venv_prompt = ".venv #{$project_name}-#{$python_version_abbrev}"
 $apt_packages = "git vim shellcheck"
 
 # Project dependencies setup script
-$project_setup_script = <<-'PROJECT_SCRIPT'
+$project_setup_script = <<~'PROJECT_SCRIPT'
+  # PUT YOUR COMMANDS HERE TO INSTALL PROJECT DEPENDENCIES
   # NOTE: pip is already upgraded for you.
-  # Put your commands after THIS LINE to install project dependencies:
 
   # Copy this script to the project directory in case it needs to be run again, excluding this comment/cmd
   cat /tmp/vagrant-shell | head -n -2 | sed -e '1i#!/usr/bin/env bash' | tee /vagrant/vagrant-project-setup.sh  # delib no -a
@@ -53,14 +53,14 @@ Vagrant.configure("2") do |config|
     end
 
     # Install requested apt packages
-    dbw.vm.provision "Install specified apt packages [#{$apt_packages}]", type: "shell", inline: <<-APT_SCRIPT
+    dbw.vm.provision "Install specified apt packages [#{$apt_packages}]", type: "shell", inline: <<~APT_SCRIPT
       apt-get update
       apt-get --yes upgrade
       apt-get --yes install #{$apt_packages}
     APT_SCRIPT
 
     # Install apt dependencies for all Python modules and install/setup pyenv
-    dbw.vm.provision "Install Python apt dependencies and install/setup pyenv", type: "shell", inline: <<-'PYENV_SETUP_SCRIPT'
+    dbw.vm.provision "Install Python apt dependencies and install/setup pyenv", type: "shell", inline: <<~'PYENV_SETUP_SCRIPT'
       apt-get install -y curl git gcc make zlib1g-dev libssl-dev libffi-dev libsqlite3-dev libbz2-dev libreadline-dev liblzma-dev
       # Install pyenv if not already there
       su -l vagrant -c "if [ ! -e ~/.pyenv ]; then curl https://pyenv.run | bash; fi"
@@ -77,7 +77,7 @@ Vagrant.configure("2") do |config|
     PYENV_SETUP_SCRIPT
 
     # Install specified Python version using pyenv and set at /vagrant/.python-version
-    dbw.vm.provision "Install Python #{$python_version} and set as local project version", type: "shell", inline: <<-PYENV_INSTALL_SCRIPT
+    dbw.vm.provision "Install Python #{$python_version} and set as local project version", type: "shell", inline: <<~PYENV_INSTALL_SCRIPT
       su -l vagrant <<-BASH_COMMAND
 		source ~/.pyenvrc
 		pyenv install --skip-existing #{$python_version}
@@ -87,19 +87,19 @@ Vagrant.configure("2") do |config|
     PYENV_INSTALL_SCRIPT
 
     # Create and setup venv, if specified
-    if $new_project_venv
-      dbw.vm.provision "Create venv and activate by default on login", type: "shell", inline: <<-VENV_SETUP_SCRIPT
-		su -l vagrant <<-BASH_COMMAND
-			source ~/.pyenvrc
-			cd /vagrant
-			if [ -e #{$venv_dir} ]; then
-				echo "#{$venv_dir} EXISTS - SKIPPING VENV CREATION"
-			else
-				python -m venv --upgrade-deps --prompt "#{$venv_prompt}" #{$venv_dir}
-			fi
-			if ! grep activate ~/.pyenvrc; then echo \"source #{$venv_dir}/bin/activate\" >> ~/.pyenvrc; fi
-		BASH_COMMAND
-	VENV_SETUP_SCRIPT
+    if $create_new_project_venv
+      dbw.vm.provision "Create venv and activate by default on login", type: "shell", inline: <<~VENV_SETUP_SCRIPT
+        su -l vagrant <<-BASH_COMMAND
+		source ~/.pyenvrc
+		cd /vagrant
+		if [ -e #{$venv_dir} ]; then
+			echo "#{$venv_dir} EXISTS - SKIPPING VENV CREATION"
+		else
+			python -m venv --upgrade-deps --prompt "#{$venv_prompt}" #{$venv_dir}
+		fi
+		if ! grep activate ~/.pyenvrc; then echo \"source #{$venv_dir}/bin/activate\" >> ~/.pyenvrc; fi
+	BASH_COMMAND
+      VENV_SETUP_SCRIPT
     end
  
     # Run project specific setup script
