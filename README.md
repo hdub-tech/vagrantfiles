@@ -1,10 +1,3 @@
-* [Description](#description)
-* [Requirements](#requirements)
-* [General Usage](#general-usage)
-* [Available files](#available-files)
-  * [Templates](#templates)
-  * [Project Specific](#project-specific)
-
 # Description
 
 This repo is just a collection of template and project specific Vagrantfiles that I created
@@ -21,8 +14,18 @@ probably find it best to just fork/copy/mod what suits your fancy.
 Happy Virtualizing,
 H Dub
 
+* [Description](#description)
+* [Requirements](#requirements)
+* [General Usage](#general-usage)
+* [Available files](#available-files)
+  * [Templates](#templates)
+  * [Project Specific](#project-specific)
+
 ---
 # Requirements
+
+Install:
+
 * [Vagrant](https://developer.hashicorp.com/vagrant/docs/installation)
 * [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
   * [VirtualBox Guest Additions](https://www.virtualbox.org/manual/ch04.html#additions-linux) - for shared directories between host and guest.
