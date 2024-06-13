@@ -1,0 +1,121 @@
+#                     Copyright H Dub (hdub-tech) 2024
+#        Distributed under the Boost Software License, Version 1.0.
+# See accompanying file LICENSE or copy at https://www.boost.org/LICENSE_1_0.txt
+#                     Python template - Version 1.0
+#
+# ####################################################################### #
+#                         UPDATE THIS BLOCK BELOW                         #
+# ####################################################################### #
+# Get basename of current directory to be project name, or edit to hardcode.
+# This will be the hostname and part of the VM name.
+$project_name = File.basename(__dir__)
+#$project_name = "hardcoded-name"
+
+# Set the desired Python version here
+$python_version = "3.12"
+# Ex) py312, like a tox target. If not using basic versions, you may want to edit this
+$python_version_abbrev = "py#{$python_version.split('.').first(2).join('')}"
+
+# A new .venv/vagrant-pyNNN directory will be created at the project level
+# and used unless this is changed to false or the line deleted/commented. The
+# other venv variables should be acceptable at defaults. If the directory exists,
+# it will not be touched.
+$create_new_project_venv = true
+$venv_dir = "/vagrant/.venv/vagrant-#{$python_version_abbrev}"
+$venv_prompt = ".venv #{$project_name}-#{$python_version_abbrev}"
+
+# Space separated list of system packages needed for this project. 
+$apt_packages = "git vim"
+
+# Project dependencies setup script
+$project_setup_script = <<~'PROJECT_SCRIPT'
+  # PUT YOUR COMMANDS HERE TO INSTALL PROJECT DEPENDENCIES AND SET YOUR NICITIES.
+  # NOTE: pip is already upgraded for you. Feel free to remove what you don't want/need.
+  set -e                           # Exit on error
+  # Always start in the project/mounted dir at login
+  if ! grep "cd /vagrant" ~/.bashrc; then echo "cd /vagrant" >> ~/.bashrc; fi
+  cd /vagrant                      # Change to the project/mounted dir
+  source ~/.pyenvrc                # Use the just installed python and activate $venv_dir
+PROJECT_SCRIPT
+# ####################################################################### #
+#                         UPDATE THIS BLOCK ABOVE                         #
+# ####################################################################### #
+
+Vagrant.configure("2") do |config|
+
+  # Name the VM after the project and Vagrant instance type
+  config.vm.define "#{$project_name}-debian12-bookworm" do |dbw|
+    # Official Debian image
+    dbw.vm.box = "debian/bookworm64"
+    dbw.vm.hostname = $project_name
+
+    # VirtualBox configuration
+    dbw.vm.provider "virtualbox" do |v|
+      # UI name in VirtualBox
+      v.name = "#{$project_name}-debian12-bookworm"
+    end
+
+    # Install requested apt packages
+    dbw.vm.provision "Install specified apt packages [#{$apt_packages}] and Python dependency packages", type: "shell", inline: <<~APT_SCRIPT
+      apt-get update
+      apt-get --yes upgrade
+      apt-get --yes install #{$apt_packages} \
+                            curl git gcc make zlib1g-dev libssl-dev libffi-dev libsqlite3-dev \
+                            libbz2-dev libreadline-dev liblzma-dev
+    APT_SCRIPT
+
+    # Install and setup pyenv
+    dbw.vm.provision "Install and setup pyenv", type: "shell", privileged: false, inline: <<~'PYENV_SETUP_SCRIPT'
+      set -e
+      # Install pyenv if not already there
+      if [ ! -e ~/.pyenv ]; then
+        # Split up due to noisy unnecessary stderr on both commands
+        curl --silent --output /tmp/pyenv.run https://pyenv.run
+        bash /tmp/pyenv.run 2>&1
+      else
+        echo "WARNING: ~/.pyenv exists - Skipping pyenv installation" 1>&2
+      fi
+	# The BASH Heredocs must use tabs: https://www.shellcheck.net/wiki/SC1040
+        echo "INFO: Creating ~/.pyenrc to be sourced in ~/.bashrc with contents:"
+	cat <<-'PYRC' | tee ~/.pyenvrc  # Deliberate no -a
+		export PYENV_ROOT="$HOME/.pyenv"
+		command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+		eval "$(pyenv init -)"
+	PYRC
+      echo "INFO: Adding "source .pyenvrc" to bashrc, only if not already there"
+      if ! grep pyenvrc ~/.bashrc; then echo "source ~/.pyenvrc" | tee -a ~/.bashrc; fi
+    PYENV_SETUP_SCRIPT
+
+    # Install specified Python version using pyenv and set at /vagrant/.python-version
+    dbw.vm.provision "Install Python #{$python_version} and set as local project version", type: "shell", privileged: false, inline: <<~PYENV_INSTALL_SCRIPT
+      set -e
+      source ~/.pyenvrc
+      pyenv install --skip-existing #{$python_version} 2>&1
+      cd /vagrant
+      pyenv local #{$python_version}
+    PYENV_INSTALL_SCRIPT
+
+    # Create and setup venv, if specified
+    if $create_new_project_venv
+      dbw.vm.provision "Create venv and activate by default on login", type: "shell", privileged: false, inline: <<~VENV_SETUP_SCRIPT
+        set -e
+        source ~/.pyenvrc
+        cd /vagrant
+        if [ -e #{$venv_dir} ]; then
+          echo "WARNING: #{$venv_dir} exists - Skipping venv creation" 1>&2
+        else
+          echo "INFO: Creating venv at #{$venv_dir} with prompt (#{$venv_prompt})"
+          python -m venv --upgrade-deps --prompt "#{$venv_prompt}" #{$venv_dir}
+        fi
+        if ! grep activate ~/.pyenvrc; then echo \"source #{$venv_dir}/bin/activate\" >> ~/.pyenvrc; fi
+      VENV_SETUP_SCRIPT
+    end
+ 
+    # Run project specific setup script
+    dbw.vm.provision "Run project setup script", type: "shell", privileged: false, inline: <<~PROJECT_SETUP_SCRIPT
+      #{$project_setup_script}
+      echo "INFO: Copying this script to the project directory in case it needs to be run again, excluding this comment/cmd"
+      cat /tmp/vagrant-shell | head -n -2 | sed -e '1i#!/usr/bin/env bash' | tee /vagrant/vagrant-project-setup.sh  # delib no -a
+    PROJECT_SETUP_SCRIPT
+  end
+end
