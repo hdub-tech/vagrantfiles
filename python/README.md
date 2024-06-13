@@ -27,9 +27,12 @@ This chart is the list of variables in the top of the Vagrantfile which you are 
 | --- | --- | --- |
 | `project_name` | String | Used as VM hostname and part of the VM name |
 | `python_version` | String | Any [pyenv supported version](https://github.com/pyenv/pyenv/tree/master/plugins/python-build/share/python-build) of Python. Major only, or major.minor versions supported |
-| `create_new_project_venv` | boolean | Whether or not to create a new `.venv/vagrant-pyVERS` (`venv_dir`) with prompt `.venv $project_name-pyVERS` (`venv_prompt`) and activate it on login. If `false`, no venv actions will occur. If `true` and the `venv_dir` already exists, venv creation is skipped but it will be activated on login. |
+| `python_version_abbrev` | String | Used as part of the `venv_dir` name, intended to replicate tox targets, like `py312` for Python 3.12. If you use something like `miniconda`, or any of the other named Pythons which pyenv supports, this name might be mangled into something like `pyminiconda3-312-24`. In this case, you might want to manually hardcode it to something like `py312` instead. |
+| `create_new_project_venv` | boolean | Whether or not to create a new `venv_dir` with prompt `venv_prompt` and activate it on login. If `false`, no venv actions will occur. If `true` and the `venv_dir` already exists, venv creation is skipped but it will be activated on login. |
+| `venv_dir` | String | If `create_new_project_venv` is true, this will be the path to the directory |
+| `venv_prompt` | String | If `create_new_project_venv` is true, this will be the prompt in the venv. |
 | `apt_packages` | String (space separated)<sup>[1](#1)</sup> | The packaged which need to be installed in order to setup your project. You do NOT need to handle the Python dependencies here, just yours. |
-| `project_setup_script` | Heredoc (Squiggly Quoted)<sup>[2](#2)</sup> | This is where your project specific setup script goes. Examples inlcude things like `pip install -e .` and `pip install tox` |
+| `project_setup_script` | Heredoc (Squiggly Quoted)<sup>[2](#2)</sup> | This is where your project specific setup script goes. Examples include things like `pip install -e .` and `pip install tox` |
 
 ---
 Footnotes:
