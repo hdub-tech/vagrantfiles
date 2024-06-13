@@ -1,0 +1,169 @@
+#                     Copyright H Dub (hdub-tech) 2024
+#        Distributed under the Boost Software License, Version 1.0.
+# See accompanying file LICENSE or copy at https://www.boost.org/LICENSE_1_0.txt
+#                     Kali template - Version 1.0
+#
+# ####################################################################### #
+#                         UPDATE THIS BLOCK BELOW                         #
+# ####################################################################### #
+$vm_name = "vagrant-kalilinux-rolling"
+$hostname = "kali"
+
+# Only tested with bash/zsh
+$preferred_shell = "bash"
+
+# The folder on your system to share at /vagrant in the VM
+$local_shared_dir = "."
+
+# If false, the shell provisioners will run as the vagrant user
+$run_as_root = false
+
+# The version of Python to install with pyenv and set as the pyenv global default
+$python_version = "3.12"
+
+# These will be installed as root regardless of $run_as_root
+$apt_packages = [
+  "git",
+  "tree",
+  "vim"
+]
+
+# The directory to run git clone from
+$git_repos_dir = "/opt"
+$git_repos = [
+  "https://github.com/fortra/impacket",
+  "https://github.com/ly4k/Certipy"
+]
+
+# Packages to install with pip into pyenv $python_version
+$pip_packages = [
+  "pipx"
+]
+
+# Full path to projects to install with pipx using pyenv $python_version
+$pipx_projects = [
+  "#{$git_repos_dir}/impacket"
+]
+
+# Custom setup and nicities script
+$custom_setup_script = <<~CUSTOM_SETUP_SCRIPT
+  # PUT YOUR COMMANDS HERE TO INSTALL PROJECT DEPENDENCIES AND SET YOUR NICITIES.
+  # NOTE: pip is already upgraded for you. Feel free to remove what you don't want/need.
+  set -e                           # Exit on error
+  echo -n "INFO: Running as " && whoami
+  sudo chsh -s /usr/bin/#{$preferred_shell} #{ $run_as_root ? 'root' : 'vagrant' }
+  # Always start in the project/mounted dir at login
+  if ! grep "cd /vagrant" ~/.#{$preferred_shell}rc; then echo "cd /vagrant" >> ~/.#{$preferred_shell}rc; fi
+  #cd /vagrant                      # Change to the project/mounted dir
+CUSTOM_SETUP_SCRIPT
+# ####################################################################### #
+#                         UPDATE THIS BLOCK ABOVE                         #
+# ####################################################################### #
+
+Vagrant.configure("2") do |config|
+
+  # Name the VM specifically
+  config.vm.define $vm_name do |kali|
+    # Official Kali image
+    kali.vm.box = "kalilinux/rolling"
+    kali.vm.hostname = $hostname
+    kali.vm.synced_folder $local_shared_dir, "/vagrant"
+
+    # VirtualBox configuration
+    kali.vm.provider "virtualbox" do |vb|
+      # Name in VirtualBox
+      vb.name = $vm_name
+      # Disable Remote Display server ffs Kali
+      vb.customize ["modifyvm", :id, "--vrde=off"]
+    end
+
+    # Install requested apt packages
+    kali.vm.provision "Install specified apt packages #{$apt_packages} and Python dependency packages", type: "shell", privileged: true, inline: <<~APT_SCRIPT
+      apt-get update
+      apt-get --yes upgrade
+      apt-get --yes install #{$apt_packages.join(' ')} \
+                            curl git gcc make zlib1g-dev libssl-dev libffi-dev libsqlite3-dev \
+                            libbz2-dev libreadline-dev liblzma-dev
+    APT_SCRIPT
+
+    # Install and setup pyenv
+    pyenvrc_file = "/etc/profile.d/pyenvrc"
+    kali.vm.provision "Install and setup pyenv", type: "shell", privileged: $run_as_root, inline: <<~PYENV_SETUP_SCRIPT
+      set -e
+      # Install pyenv if not already there
+      if [ ! -e ~/.pyenv ]; then
+        # Split up due to noisy unnecessary stderr on both commands
+        curl --silent --output /tmp/pyenv.run https://pyenv.run
+        bash /tmp/pyenv.run 2>&1
+      else
+        echo "WARNING: ~/.pyenv exists - Skipping pyenv installation" 1>&2
+      fi
+	# The BASH Heredocs must use tabs: https://www.shellcheck.net/wiki/SC1040
+        echo "INFO: Creating #{pyenvrc_file} to be sourced in ~/.#{$preferred_shell}rc with contents:"
+	cat <<-'PYRC' | sudo tee #{pyenvrc_file}  # Deliberate no -a
+		export PYENV_ROOT="$HOME/.pyenv"
+		command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+		eval "$(pyenv init -)"
+	PYRC
+      echo "INFO: Adding ". #{pyenvrc_file}" to ~/.#{$preferred_shell}rc and ~/.profile, only if not already there"
+      if ! grep #{pyenvrc_file} ~/.#{$preferred_shell}rc; then echo ". #{pyenvrc_file}" | tee -a ~/.#{$preferred_shell}rc; fi
+      if ! grep #{pyenvrc_file} ~/.profile; then echo ". #{pyenvrc_file}" | tee -a ~/.profile; fi
+    PYENV_SETUP_SCRIPT
+
+    # Install specified Python version using pyenv and set as global default
+    kali.vm.provision "Install Python #{$python_version}, set as global default version and install #{$pip_packages}", type: "shell", privileged: $run_as_root, inline: <<~PYENV_INSTALL_SCRIPT
+      set -e
+      . #{pyenvrc_file}
+      pyenv install --skip-existing #{$python_version} 2>&1
+      pyenv global #{$python_version}
+      pip install -U pip #{$pip_packages.join(' ')}
+    PYENV_INSTALL_SCRIPT
+
+    # Clone specified git repos, if specified
+    if $git_repos.length > 0
+      kali.vm.provision "Cloning specified git_repos to #{$git_repos_dir}", type: "shell", privileged: $run_as_root, inline: <<~GIT_REPOS_SCRIPT
+        set -e
+        clone_needs_sudo=""
+        if [ -d #{$git_repos_dir} ]; then
+          user_writable_git_dir=$( find #{$git_repos_dir} -maxdepth 0 -writable )
+          if [ "#{$git_repos_dir}" != "$user_writable_git_dir" ]; then
+            clone_needs_sudo="sudo"
+          fi
+        else
+          echo mkdir #{$git_repos_dir}
+        fi
+        cd #{$git_repos_dir}
+        for url in `echo #{$git_repos.join(' ')}`; do
+          project_dir=${url##http*/} 
+          echo "INFO: Cloning $url to #{$git_repos_dir}/$project_dir..."
+          if [ ! -d $project_dir ]; then
+            $clone_needs_sudo git clone $url
+            if (("${#clone_needs_sudo[@]}" > 0)); then sudo chown -R vagrant $project_dir; fi
+          else
+            echo "already exists - skipping" 1>&2
+          fi
+        done
+      GIT_REPOS_SCRIPT
+    end
+
+    # pipx install specified projects, if specified
+    if $pipx_projects.length > 0
+      # TODO make more efficient as bash loop
+      $pipx_projects.each do |path|
+        kali.vm.provision "pipx installing #{path}", type: "shell", privileged: $run_as_root, inline: <<~PIPX_INSTALL_SCRIPT
+          set -e
+          . #{pyenvrc_file}
+          pipx install #{path}
+        PIPX_INSTALL_SCRIPT
+      end
+      kali.vm.provision "Running pipx ensurepath", type: "shell", privileged: $run_as_root, inline: "pipx ensurepath"
+    end
+
+    # Run custom specific setup script
+    kali.vm.provision "Run custom setup script", type: "shell", privileged: $run_as_root, inline: <<~SETUP_SCRIPT
+      #{$custom_setup_script}
+      echo "INFO: Copying this script to the shared directory in case it needs to be run again, excluding this comment/cmd"
+      cat /tmp/vagrant-shell | head -n -2 | sed -e '1i#!/usr/bin/env bash' | tee /vagrant/vagrant-custom-setup.sh  # delib no -a
+    SETUP_SCRIPT
+  end
+end
