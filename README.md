@@ -52,6 +52,7 @@ Template name for a more detailed README.
 | Template | Version | Description |
 | --- | --- | --- |
 | [python](python) | 1.0 | Using [debian/bookworm64](https://app.vagrantup.com/debian/boxes/bookworm64), update the system, install specified apt_packages as well as optional Python module dependencies, install and setup pyenv for the vagrant user, install the specified version of Python and set it for the local project, create a venv for the project with the specified python_version if it doesn't exist and execute the project setup script specified by the user. |
+| [kali](kali) | 1.0 | Using [kalilinux/rolling](https://app.vagrantup.com/kalilinux/boxes/rolling), install pyenv, specified version of Python, specified pip and apt packages, checkout the specified git repos, pipx install the specified project, and set some VM properties. Provisioning defaults to unprivileged, but this can be overriden. |
 
 ## Project Specific
 
