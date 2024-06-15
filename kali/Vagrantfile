@@ -35,9 +35,8 @@ $git_repos = [
   "https://github.com/ly4k/Certipy"
 ]
 
-# Packages to install with pip into pyenv $python_version
+# Packages to install with pip into pyenv $python_version (pipx already installed)
 $pip_packages = [
-  "pipx"
 ]
 
 # Full path to projects to install with pipx using pyenv $python_version
@@ -116,7 +115,7 @@ Vagrant.configure("2") do |config|
       . #{pyenvrc_file}
       pyenv install --skip-existing #{$python_version} 2>&1
       pyenv global #{$python_version}
-      pip install -U pip #{$pip_packages.join(' ')}
+      pip install -U pip pipx #{$pip_packages.join(' ')}
     PYENV_INSTALL_SCRIPT
 
     # Clone specified git repos, if specified
