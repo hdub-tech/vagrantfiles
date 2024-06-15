@@ -50,9 +50,8 @@ $custom_setup_script = <<~CUSTOM_SETUP_SCRIPT
   # NOTE: pip is already upgraded for you. Feel free to remove what you don't want/need.
   set -e                           # Exit on error
   echo -n "INFO: Running as " && whoami
-  sudo chsh -s /usr/bin/#{$preferred_shell} #{ $run_as_root ? 'root' : 'vagrant' }
   # Always start in the project/mounted dir at login
-  if ! grep "cd /vagrant" ~/.#{$preferred_shell}rc; then echo "cd /vagrant" >> ~/.#{$preferred_shell}rc; fi
+  if ! grep -q "cd /vagrant" ~/.#{$preferred_shell}rc; then echo "cd /vagrant" | tee -a ~/.#{$preferred_shell}rc; fi
   #cd /vagrant                      # Change to the project/mounted dir
 CUSTOM_SETUP_SCRIPT
 # ####################################################################### #
@@ -85,6 +84,10 @@ Vagrant.configure("2") do |config|
                             libbz2-dev libreadline-dev liblzma-dev
     APT_SCRIPT
 
+    # Preferred shell - need to update before modifying settings in rc files
+    primary_user = $run_as_root ? 'root' : 'vagrant'
+    kali.vm.provision "Set #{primary_user}'s preferred shell to #{$preferred_shell}", type: "shell", privileged: true, inline: "chsh -s /usr/bin/#{$preferred_shell} #{primary_user}"
+
     # Install and setup pyenv
     pyenvrc_file = "/etc/profile.d/pyenvrc"
     kali.vm.provision "Install and setup pyenv", type: "shell", privileged: $run_as_root, inline: <<~PYENV_SETUP_SCRIPT
@@ -105,8 +108,8 @@ Vagrant.configure("2") do |config|
 		eval "$(pyenv init -)"
 	PYRC
       echo "INFO: Adding ". #{pyenvrc_file}" to ~/.#{$preferred_shell}rc and ~/.profile, only if not already there"
-      if ! grep #{pyenvrc_file} ~/.#{$preferred_shell}rc; then echo ". #{pyenvrc_file}" | tee -a ~/.#{$preferred_shell}rc; fi
-      if ! grep #{pyenvrc_file} ~/.profile; then echo ". #{pyenvrc_file}" | tee -a ~/.profile; fi
+      if ! grep -q #{pyenvrc_file} ~/.#{$preferred_shell}rc; then echo ". #{pyenvrc_file}" | tee -a ~/.#{$preferred_shell}rc; fi
+      if ! grep -q #{pyenvrc_file} ~/.profile; then echo ". #{pyenvrc_file}" | tee -a ~/.profile; fi
     PYENV_SETUP_SCRIPT
 
     # Install specified Python version using pyenv and set as global default
@@ -129,15 +132,15 @@ Vagrant.configure("2") do |config|
             clone_needs_sudo="sudo"
           fi
         else
-          echo mkdir #{$git_repos_dir}
+          mkdir #{$git_repos_dir}
         fi
         cd #{$git_repos_dir}
         for url in `echo #{$git_repos.join(' ')}`; do
-          project_dir=${url##http*/} 
+          project_dir=${url##http*/}
           echo "INFO: Cloning $url to #{$git_repos_dir}/$project_dir..."
           if [ ! -d $project_dir ]; then
             $clone_needs_sudo git clone $url
-            if (("${#clone_needs_sudo[@]}" > 0)); then sudo chown -R vagrant $project_dir; fi
+            if (("${#clone_needs_sudo}" > 0)); then sudo chown -R vagrant $project_dir; fi
           else
             echo "already exists - skipping" 1>&2
           fi
@@ -155,7 +158,9 @@ Vagrant.configure("2") do |config|
           pipx install #{path}
         PIPX_INSTALL_SCRIPT
       end
-      kali.vm.provision "Running pipx ensurepath", type: "shell", privileged: $run_as_root, inline: "pipx ensurepath"
+
+      # pipx ensurepath + vagrant seems to need special su work to get it to update a non-default shell for root.
+      kali.vm.provision "Running pipx ensurepath for #{primary_user}", type: "shell", privileged: true, inline: "su -l #{primary_user} -c \"pipx ensurepath\""
     end
 
     # Run custom specific setup script
