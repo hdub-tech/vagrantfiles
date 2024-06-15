@@ -4,4 +4,4 @@
 .venv/
 
 # File generated in some templates
-vagrant-project-setup.sh
+vagrant-*-setup.sh
