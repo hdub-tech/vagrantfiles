@@ -23,7 +23,6 @@ $python_version = "3.12"
 
 # These will be installed as root regardless of $run_as_root
 $apt_packages = [
-  "git",
   "tree",
   "vim"
 ]
@@ -142,7 +141,7 @@ Vagrant.configure("2") do |config|
             $clone_needs_sudo git clone $url
             if (("${#clone_needs_sudo}" > 0)); then sudo chown -R vagrant $project_dir; fi
           else
-            echo "already exists - skipping" 1>&2
+            echo "WARNING: $project_dir already exists - skipping" 1>&2
           fi
         done
       GIT_REPOS_SCRIPT
