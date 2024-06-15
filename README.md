@@ -1,15 +1,10 @@
 # Description
 
-This repo is just a collection of template and project specific Vagrantfiles that I created
-as a way to learn Vagrant and more quickly stand-up development VMs for working on other
-projects. I'm not looking to start a huge project, but I thought others might get use from them.
-I made some design choices that others might find questionable (for example, I deliberately skipped
-taking advantage of the [File Provisioner](https://developer.hashicorp.com/vagrant/docs/provisioning/file) in favor of making completely self
-contained Vagrantfiles). For the [project-specific](project-specific) ones, I don't do a fresh clone
-of the project but rather attach a pre-existing clone to /vagrant (That said the script used to
-set-up the project is copied to the VM so you can always clone fresh and re-run the script).
-So, while I'm definitely open to feedback and PRs (particularly for security issues), you will
-probably find it best to just fork/copy/mod what suits your fancy.
+This repo is just a collection of template and project specific Vagrantfiles that I created as a way to learn Vagrant and more quickly stand-up development VMs for working on other projects. I'm not looking to start a huge project, but I thought others might get use from them.
+
+I made some design choices that others might find questionable (for example, I deliberately skipped taking advantage of the [File Provisioner](https://developer.hashicorp.com/vagrant/docs/provisioning/file) in favor of making completely self contained Vagrantfiles). For the [project-specific](project-specific) ones, I don't do a fresh clone of the project but rather attach a pre-existing clone to /vagrant (That said the script used to set-up the project is copied to the VM so you can always clone fresh and re-run the script). And possibly most obviously, I'm doing a ton in shell provisioners which would be better suited for a configuration management tool like Ansible, which I know pretty intimately even. I'm just seeing how far I can push the monolithic Vagrantfile without additional tools required.
+
+So, while I'm definitely open to feedback and PRs (particularly for security issues), you will probably find it best to just fork/copy/mod what suits your fancy.
 
 Happy Virtualizing,
 H Dub
@@ -52,8 +47,11 @@ Template name for a more detailed README.
 | Template | Version | Description |
 | --- | --- | --- |
 | [python](python) | 1.0 | Using [debian/bookworm64](https://app.vagrantup.com/debian/boxes/bookworm64), update the system, install specified apt_packages as well as optional Python module dependencies, install and setup pyenv for the vagrant user, install the specified version of Python and set it for the local project, create a venv for the project with the specified python_version if it doesn't exist and execute the project setup script specified by the user. |
+| [kali](kali) | 1.0 | Using [kalilinux/rolling](https://app.vagrantup.com/kalilinux/boxes/rolling), install pyenv, specified version of Python, specified pip and apt packages, checkout the specified git repos, pipx install the specified project, and set some VM properties. Provisioning defaults to unprivileged, but this can be overriden. |
 
 ## Project Specific
+
+Project specific VMs are meant to correspond to Github projects which don't already have a Vagrantfile.
 
 | Project | Vagrantfile | Version | Template |
 | --- | --- | --- | --- |
