@@ -1,0 +1,41 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "debian/bookworm64"
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  # Provisioners:
+  config.vm.provision "PROVISIONER 1", type: :shell, inline: "echo EXECUTING PROVISIONER 1"
+  config.vm.provision "PROVISIONER 2", type: :shell, inline: "echo EXECUTING PROVISIONER 2"
+
+  # Triggers:
+
+  # WORKS AS EXPECTED (Executes immediately after the COMMAND provision starts, but before
+  # performing any provisioning actions)
+  config.trigger.before :machine_action_provision, type: :hook,
+    name: "HOOK TRIGGER BEFORE machine_action_provision",
+    info: "INSIDE BEFORE machine_action_provision HOOK TRIGGER"
+
+  # WORKS AS EXPECTED (Executes after machine_action_provision, and before "Calling IN action: Provision")
+  config.trigger.before Vagrant::Action::Builtin::Provision, type: :action,
+    name: "ACTION TRIGGER BEFORE Vagrant::Action::Builtin::Provision",
+    info: "INSIDE BEFORE Vagrant::Action::Builtin::Provision TRIGGER"
+
+  # UNEXPECTED: Executes **immediately after** "Calling IN action: Provision", BEFORE any
+  #             provisioning is done.
+  # EXPECTED: Executes immediately after "Calling OUT action: Provision"
+  config.trigger.after Vagrant::Action::Builtin::Provision, type: :action,
+    name: "ACTION TRIGGER AFTER Vagrant::Action::Builtin::Provision",
+    info: "INSIDE AFTER Vagrant::Action::Builtin::Provision TRIGGER"
+
+  # UNEXPECTED: Executes immediately after the Provision action trigger, which is shortly
+  #             after STARTING Provisioning, and BEFORE any provisioning is done.
+  # EXPECTED: executes after finishing provisioning.
+  config.trigger.after :machine_action_provision, type: :hook,
+    name: "HOOK TRIGGER AFTER machine_action_provision",
+    info: "INSIDE AFTER machine_action_provision HOOK TRIGGER"
+
+#  config.trigger.before :provisioner_run, type: :hook, name: "HOOK TRIGGER BEFORE provisioner_run", info: "Running before provisioner_run hook trigger"  # WORKS AS EXPECTED (Executes before each Provisioner)
+ # config.trigger.after :provisioner_run, type: :hook, name: "HOOK TRIGGER AFTER provisioner_run", info: "Running after provisioner_run hook trigger"  # WORKS AS EXPECTED (Executes after each Provisioner)
+end
