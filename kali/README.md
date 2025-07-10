@@ -20,7 +20,9 @@ This [Vagrantfile](Vagrantfile) is based on the Official [kalilinux/rolling](htt
   9. (root or vagrant) Install `$python_version` using [`pyenv`](https://github.com/pyenv/pyenv/blob/master/COMMANDS.md#pyenv-install) and set it as the `pyenv global` version. Install the specified `$pip_packages` into that `pyenv`, and upgrade its pip and pipx
   10. (root or vagrant) If a list of `$git_repos` is specified, clone them to `$git_repos_dir`. See Variable footnote [#3](#3) for some implementation details.
   11. (root or vagrant) If a list of `$pipx_projects` is specified, run `pipx install` to install them into the `pyenv global` `$python_version` environment and then run `pipx ensurepath` to make sure they are accessible upon login.
-  12. (root or vagrant) Run the user specified `$custom_setup_script` and copy that script to `/vagrant/vagrant-custom-setup.sh`.
+  12. (root or vagrant) If a list of `$curl_bash_projects` is specified, run `curl $url | bash` to install them.
+  13. (root or vagrant) If a list of `$tarballs` is specified, run `wget` to download and `tar` to decompress them to `$git_repos_dir`. 
+  14. (root or vagrant) Run the user specified `$custom_setup_script` and copy that script to `/vagrant/vagrant-custom-setup.sh`.
 
 ## Variables
 
@@ -35,10 +37,12 @@ This chart is the list of variables in the top of the Vagrantfile which you are 
 | `run_as_root` | boolean | Whether or not to run the shell provisioners as root<sup>[2](#2)</sup>. If false, uses the vagrant user |
 | `python_version` | String | Any [pyenv supported version](https://github.com/pyenv/pyenv/tree/master/plugins/python-build/share/python-build) of Python, including the unlisted `major` or `major.minor` versions, like `3` or `3.12`. This will be set as the `pyenv global` default |
 | `apt_packages` | Array[String] | The packages you need/want installed in the VM. You do NOT need to handle the Python dependencies here, just yours |
-| `git_repos_dir` | String | The full path to the directory you want to clone github repos in to<sup>[3](#3)</sup> |
+| `git_repos_dir` | String | The full path to the directory you want to clone github repos and extract tarballs to<sup>[3](#3)</sup> |
 | `git_repos` | Array[String] | The https URLs to the git repos the user wants to clone WITHOUT THE `.git` at the end (the basename will be used to determine if it is already cloned) |
+| `tarballs` | Array[String] | The URLs of gzip'ed tar files to download and extract. This will be extracted in `$git_repos_dir` |
 | `pip_packages` | Array[String] | The `pip` packages to install into the `pyenv global` default (`pipx` will be installed here already) |
 | `pipx_packages` | Array[String] | A list of directories (full path) which contain Python projects on which `pipx install` will be executed to install them into the `pyenv global` default |
+| `curl_bash_projects` | Array[String] | The URLs of sites to run `curl $url | bash` with |
 | `custom_setup_script` | Heredoc (Squiggly Unquoted)<sup>[4](#4)</sup> | This is where your custom setup script goes. Example: adding a `cd /vagrant` to the `$preferred_shell` rc file to always start in the shared directory |
 
 ---
@@ -53,3 +57,4 @@ Footnotes:
 ## Changelog
 
 * 1.0 - Initial Release
+* 2.0 - Add curl_bash_projects and tarballs support, rename VM/hostname, upgrade Python, fix missing primary_user ref, fix Kali apt key, add/install more tools
