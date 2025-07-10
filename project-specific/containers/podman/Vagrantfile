@@ -1,0 +1,150 @@
+#                           H Dub (hdub-tech) 2025
+#                     Podman dev environment - Version 1.0
+#
+# ####################################################################### #
+#                         UPDATE THIS BLOCK BELOW                         #
+# ####################################################################### #
+# Get basename of current directory to be project name, or edit to hardcode.
+# This will be the hostname and part of the VM name.
+$project_name = File.basename(__dir__)
+
+# The folder on your system to share at /vagrant in the VM
+$local_shared_dir = "."
+
+# Space separated list of system packages needed for this project. 
+# Deliberately left off go in favor of a binary installation
+$apt_packages = "vim \
+  btrfs-progs \
+  curl \
+  crun \
+  gcc \
+  git \
+  iptables \
+  libassuan-dev \
+  libbtrfs-dev \
+  libc6-dev \
+  libdevmapper-dev \
+  libglib2.0-dev \
+  libgpgme-dev \
+  libgpg-error-dev \
+  libprotobuf-dev \
+  libprotobuf-c-dev \
+  libseccomp-dev \
+  libselinux1-dev \
+  libsystemd-dev \
+  make \
+  netavark \
+  pkg-config \
+  uidmap"
+
+# The directory to run git clone from
+$git_repos_dir = "/home/vagrant"
+$git_repos = [
+  "https://github.com/containers/conmon"
+]
+# "https://go.googlesource.com/go",
+# "https://github.com/opencontainers/runc"
+
+# Project dependencies setup script
+# The following is constructed from the following sources:
+#   * https://podman.io/docs/installation#building-from-source
+#   * https://go.dev/doc/install
+#   * https://github.com/containers/podman/blob/main/CONTRIBUTING.md
+$project_setup_script = <<~PROJECT_SCRIPT
+  # PUT YOUR COMMANDS HERE TO INSTALL PROJECT DEPENDENCIES AND SET YOUR NICITIES.
+  set -e                           # Exit on error
+
+  GO_VERSION="$( grep "^go" /vagrant/go.mod | cut -d' ' -f2 )"
+  echo "\n========= Installing podman desired go version (${GO_VERSION}) and updating vagrant user PATH ========="
+  GO_URL="https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
+  GO_ZIP="/tmp/$( basename ${GO_URL} )"
+  GOROOT=/usr/local/go
+  wget --no-verbose --output-document="${GO_ZIP}" "${GO_URL}"
+  [ -e "${GOROOT}" ] && sudo rm -r "${GOROOT}"
+  sudo tar -C "$( dirname ${GOROOT} )" -xzf "${GO_ZIP}"
+  sudo ln -s "${GOROOT}"/bin/go /usr/local/bin/go  # adds go to sudo secure_path
+
+  PODMANRC=/home/vagrant/.podmanrc
+  echo "export GOROOT=\${GOROOT}" > "${PODMANRC}"
+  echo "export PATH=\$GOROOT/bin:\$PATH" >> "${PODMANRC}"
+  # Always start in the project/mounted dir at login
+  echo "cd /vagrant" >> "${PODMANRC}"
+  echo "source ${PODMANRC}" >> /home/vagrant/.bashrc
+  source "${PODMANRC}"
+
+  echo "\n========= Setup conmon ========="
+  cd #{$git_repos_dir}/conmon
+  export GOCACHE="$( mktemp -d )"
+  make
+  sudo make podman
+
+  echo "\n========= Add configurations to /etc/containers ========="
+  sudo mkdir -p /etc/containers
+  sudo curl -L -o /etc/containers/registries.conf https://raw.githubusercontent.com/containers/image/main/registries.conf
+  sudo curl -L -o /etc/containers/policy.json https://raw.githubusercontent.com/containers/image/main/default-policy.json
+
+  LOCALE="en_US.UTF-8"
+  echo "\n========= Reconfigure Locale (${LOCALE}) so 'make docs' will work ========="
+  sudo sed -i -e "s/# \\(${LOCALE} UTF-8\\)/\\1/" /etc/locale.gen  # uncomment US locale
+  echo "LANG=\"${LOCALE}\"" | sudo tee /etc/default/locale
+  sudo locale-gen
+
+  echo "\n========= Run 'make install.tools' from podman checkout ========="
+  cd /vagrant
+  make install.tools
+
+  echo "\n========= PROJECT SETUP SCRIPT COMPLETE =========\n"
+PROJECT_SCRIPT
+# ####################################################################### #
+#                         UPDATE THIS BLOCK ABOVE                         #
+# ####################################################################### #
+
+Vagrant.configure("2") do |config|
+
+  # Name the VM after the project and Vagrant instance type
+  config.vm.define "#{$project_name}-debian12-bookworm" do |dbw|
+    # Official Debian image
+    dbw.vm.box = "debian/bookworm64"
+    dbw.vm.hostname = $project_name
+    dbw.vm.synced_folder $local_shared_dir, "/vagrant"
+
+    # VirtualBox configuration
+    dbw.vm.provider "virtualbox" do |v|
+      # UI name in VirtualBox
+      v.name = "#{$project_name}-debian12-bookworm"
+      # Hungry hungry hippo
+      v.memory = 4096
+    end
+
+    # Install requested apt packages
+    dbw.vm.provision "Install specified apt packages [#{$apt_packages}] and Python dependency packages", type: "shell", inline: <<~APT_SCRIPT
+      apt-get update
+      apt-get --yes upgrade
+      apt-get --yes install #{$apt_packages}
+    APT_SCRIPT
+
+    # Clone specified git repos, if specified
+    if $git_repos.length > 0
+      dbw.vm.provision "Cloning specified git_repos to #{$git_repos_dir}", type: "shell", privileged: false, inline: <<~GIT_REPOS_SCRIPT
+        set -e
+        cd #{$git_repos_dir}
+        for url in `echo #{$git_repos.join(' ')}`; do
+          project_dir=${url##http*/}
+          echo "INFO: Cloning $url to #{$git_repos_dir}/$project_dir..."
+          if [ ! -d $project_dir ]; then
+            git clone $url
+          else
+            echo "WARNING: $project_dir already exists - skipping" 1>&2
+          fi
+        done
+      GIT_REPOS_SCRIPT
+    end
+
+    # Run project specific setup script
+    dbw.vm.provision "Run project setup script", type: "shell", privileged: false, inline: <<~PROJECT_SETUP_SCRIPT
+      #{$project_setup_script}
+      echo "INFO: Copying this script to /vagrant/vagrant-project-setup.sh in case it needs to be run again, excluding this comment/cmd"
+      sed -e '1i#!/usr/bin/env bash' /tmp/vagrant-shell | head -n -2 > /vagrant/vagrant-project-setup.sh  # delib no append
+    PROJECT_SETUP_SCRIPT
+  end
+end
