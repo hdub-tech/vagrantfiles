@@ -6,17 +6,36 @@
 # ####################################################################### #
 # Get basename of current directory to be project name, or edit to hardcode.
 # This will be the hostname and part of the VM name.
-$project_name = File.basename(__dir__)
+$project_name = "#{File.basename(__dir__)}-dev"
 
 # The folder on your system to share at /vagrant in the VM
 $local_shared_dir = "."
 
+#go-md2man \
+$crun_packages = "autoconf \
+  automake \
+  build-essential \
+  git \
+  gcc \
+  libcap-dev \
+  libprotobuf-c-dev \
+  libseccomp-dev \
+  libsystemd-dev \
+  libtool \
+  libyajl-dev \
+  make \
+  pkgconf \
+  python3"
+
+$podmandev_packages = "curl \
+  libclone-perl \
+  libtool \
+  pre-commit
+"
 # Space separated list of system packages needed for this project. 
 # Deliberately left off go in favor of a binary installation
-$apt_packages = "vim \
+$apt_packages = "vim #{$crun_packages} \
   btrfs-progs \
-  curl \
-  crun \
   gcc \
   git \
   iptables \
@@ -34,13 +53,15 @@ $apt_packages = "vim \
   libsystemd-dev \
   make \
   netavark \
+  passt \
   pkg-config \
   uidmap"
 
 # The directory to run git clone from
 $git_repos_dir = "/home/vagrant"
 $git_repos = [
-  "https://github.com/containers/conmon"
+  "https://github.com/containers/conmon",
+  "https://github.com/containers/crun"
 ]
 # "https://go.googlesource.com/go",
 # "https://github.com/opencontainers/runc"
@@ -62,7 +83,7 @@ $project_setup_script = <<~PROJECT_SCRIPT
   wget --no-verbose --output-document="${GO_ZIP}" "${GO_URL}"
   [ -e "${GOROOT}" ] && sudo rm -r "${GOROOT}"
   sudo tar -C "$( dirname ${GOROOT} )" -xzf "${GO_ZIP}"
-  sudo ln -s "${GOROOT}"/bin/go /usr/local/bin/go  # adds go to sudo secure_path
+  #sudo ln -s "${GOROOT}"/bin/go /usr/local/bin/go  # adds go to sudo secure_path
 
   PODMANRC=/home/vagrant/.podmanrc
   echo "export GOROOT=\${GOROOT}" > "${PODMANRC}"
@@ -78,16 +99,17 @@ $project_setup_script = <<~PROJECT_SCRIPT
   make
   sudo make podman
 
+  echo "\n========= Setup crun ========="
+  cd #{$git_repos_dir}/crun
+  ./autogen.sh
+  ./configure
+  make
+  sudo make install
+
   echo "\n========= Add configurations to /etc/containers ========="
   sudo mkdir -p /etc/containers
   sudo curl -L -o /etc/containers/registries.conf https://raw.githubusercontent.com/containers/image/main/registries.conf
   sudo curl -L -o /etc/containers/policy.json https://raw.githubusercontent.com/containers/image/main/default-policy.json
-
-  LOCALE="en_US.UTF-8"
-  echo "\n========= Reconfigure Locale (${LOCALE}) so 'make docs' will work ========="
-  sudo sed -i -e "s/# \\(${LOCALE} UTF-8\\)/\\1/" /etc/locale.gen  # uncomment US locale
-  echo "LANG=\"${LOCALE}\"" | sudo tee /etc/default/locale
-  sudo locale-gen
 
   echo "\n========= Run 'make install.tools' from podman checkout ========="
   cd /vagrant
@@ -116,11 +138,24 @@ Vagrant.configure("2") do |config|
       v.memory = 4096
     end
 
+    dbw.vm.provision "Setup LOCALE for apt installs, building crun and podman make docs", type: "shell", privileged: false, inline: <<~LOCALE_SCRIPT
+      set -e
+      LOCALE="en_US.UTF-8"
+      sudo sed -i -e "s/# \\(${LOCALE} UTF-8\\)/\\1/" /etc/locale.gen  # uncomment US locale
+      echo "LANG=\"${LOCALE}\"" | sudo tee /etc/default/locale
+      sudo locale-gen
+    LOCALE_SCRIPT
+
     # Install requested apt packages
-    dbw.vm.provision "Install specified apt packages [#{$apt_packages}] and Python dependency packages", type: "shell", inline: <<~APT_SCRIPT
+    dbw.vm.provision "Install specified apt packages [#{$apt_packages}] and timesyncd", type: "shell", inline: <<~APT_SCRIPT
+      set -e
       apt-get update
       apt-get --yes upgrade
-      apt-get --yes install #{$apt_packages}
+      echo #{$apt_packages}
+      apt-get --yes install systemd-timesyncd #{$apt_packages}
+
+      systemctl start systemd-timesyncd
+      timedatectl
     APT_SCRIPT
 
     # Clone specified git repos, if specified
