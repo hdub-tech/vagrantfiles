@@ -77,6 +77,9 @@ $custom_setup_script = <<~CUSTOM_SETUP_SCRIPT
   mvn compile
   java -cp target/classes org.benf.cfr.reader.Main java.lang.Object
 
+  # Add non-versioned IntelliJ symlink to be used with desktop shortcut
+  [ ! -L /opt/idea ] && find /opt -type d -name 'idea*' -exec sudo ln -s \\{} /opt/idea \\;
+
   # Always start in the project/mounted dir at login
   #if ! grep -q "cd /vagrant" ~/.#{$preferred_shell}rc; then echo "cd /vagrant" | tee -a ~/.#{$preferred_shell}rc; fi
   #cd /vagrant                      # Change to the project/mounted dir
@@ -102,12 +105,26 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--vrde=off"]
     end
 
-    # Install requested apt packages
+    # Install requested apt packages and fix grub-pc
     kali.vm.provision "Install specified apt packages #{$apt_packages} and Python dependency packages", type: "shell", privileged: true, inline: <<~APT_SCRIPT
+      # Update Kali keyring
       wget https://archive.kali.org/archive-keyring.gpg -O /usr/share/keyrings/kali-archive-keyring.gpg
+
+      # Set grub install device for grub-pc updates
+      # Find the partition grub is on (tail cuz can't surpress header), trim
+      # off the partition ID so we have just the disk, and make sure just one
+      boot_disk=$( df --output=source /boot/grub | tail -n1 | grep --color=no -m1 -o "[^0-9]*" | head -n1 )
+      echo "grub-pc grub-pc/install_devices multiselect $boot_disk" | debconf-set-selections -v
+
+      # Non-interactive flags
       export DEBIAN_FRONTEND=noninteractive
+      # https://debian-handbook.info/browse/stable/sect.package-meta-information.html#sidebar.questions-conffiles
+      # Use default confs or old confs
+      apt_dpkg_opts="-o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\""
+
+      # Run apt
       apt-get update
-      apt-get --yes upgrade
+      apt-get --yes $apt_dpkg_opts upgrade
       apt-get --yes install #{$apt_packages.join(' ')} \
                             curl git gcc make zlib1g-dev libssl-dev libffi-dev libsqlite3-dev \
                             libbz2-dev libreadline-dev liblzma-dev
@@ -210,11 +227,13 @@ Vagrant.configure("2") do |config|
         kali.vm.provision "Downloading and extracting #{tarball_url} to #{$git_repos_dir}", type: "shell", privileged: $run_as_root, inline: <<~TARBALL_WGET_EXTRACT
           set -e
           cd "#{$git_repos_dir}"
-          sudo wget --no-verbose "#{tarball_url}"
           tarfile=$( basename #{tarball_url} )
-          project_dir=$( tar tf $tarfile | head -n1 )
-          sudo tar xzf $tarfile
-          sudo chown -R #{primary_user} $project_dir
+          if [ ! -f "#{$git_repos_dir}/${tarfile}" ]; then
+            sudo wget --no-verbose "#{tarball_url}"
+            project_dir=$( tar tf $tarfile | head -n1 )
+            sudo tar xzf $tarfile
+            sudo chown -R #{primary_user} $project_dir
+          fi
         TARBALL_WGET_EXTRACT
       end
     end
