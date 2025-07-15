@@ -245,6 +245,17 @@ Vagrant.configure("2") do |config|
       end
     end
 
+    # Add shortcuts
+    kali.vm.provision "Copy in shortcut files", type: "file", source: "shortcuts/.", destination: "~/Desktop"
+    # Set ONLY the shortcuts we created as "secure"
+    Dir.glob("shortcuts/*.desktop") do |s|
+      shortcut = File.basename(s)
+      kali.vm.provision "Set copied shortcut #{shortcut} to 'secure'", type: "shell", privileged: run_as_root, inline: <<~SECURE_SHORTCUTS
+        shortcut_path=~/Desktop/"#{shortcut}"
+        gio set -t string $shortcut_path metadata::xfce-exe-checksum "$( sha256sum "$shortcut_path" | awk '{print $1}')"
+      SECURE_SHORTCUTS
+    end
+
     # Run custom specific setup script
     kali.vm.provision "Run custom setup script", type: "shell", privileged: $run_as_root, inline: <<~SETUP_SCRIPT
       #{$custom_setup_script}

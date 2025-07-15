@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=IntelliJ IDEA
+Comment=Community Edition
+Exec=/opt/idea/bin/idea
+Icon=/opt/idea/bin/idea.png
+Terminal=false
+StartupNotify=false
