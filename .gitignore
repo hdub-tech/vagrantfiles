@@ -5,3 +5,6 @@
 
 # File generated in some templates
 vagrant-*-setup.sh
+
+# Overrides config files for Vagrantfiles
+overrides.yml

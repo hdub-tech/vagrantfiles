@@ -1,0 +1,7 @@
+---
+# Copy this file to overrides.yml and uncomment and modify values as needed.
+# Settings included in this file are the only ones currently supported for override.
+# Values included in this file are for example purposes and are not guaranteed
+# to be the default values set in the related Vagrantfile.
+
+#bridged_adapter: eth0

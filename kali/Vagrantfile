@@ -6,8 +6,14 @@
 # ####################################################################### #
 #                         UPDATE THIS BLOCK BELOW                         #
 # ####################################################################### #
+# Parse overrides file
+require 'yaml'
+overrides_file = 'overrides.yml'
+overrides = File.exist?(overrides_file) ? YAML.load_file(overrides_file) : {}
+
 $vm_name = "vagrant-hdub-tech-kalilinux-rolling"
 $hostname = "hdub-tech-kali"
+$bridged_adapter = overrides['bridged_adapter'] || "eth0"
 
 # Only tested with bash/zsh
 $preferred_shell = "bash"
@@ -96,6 +102,7 @@ Vagrant.configure("2") do |config|
     kali.vm.box = "kalilinux/rolling"
     kali.vm.hostname = $hostname
     kali.vm.synced_folder $local_shared_dir, "/vagrant"
+    kali.vm.network "public_network", bridge: $bridged_adapter
 
     # VirtualBox configuration
     kali.vm.provider "virtualbox" do |vb|
