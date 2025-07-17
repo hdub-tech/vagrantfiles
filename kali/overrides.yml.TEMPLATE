@@ -1,7 +1,85 @@
 ---
 # Copy this file to overrides.yml and uncomment and modify values as needed.
 # Settings included in this file are the only ones currently supported for override.
-# Values included in this file are for example purposes and are not guaranteed
+# Values included in this file are for example purposes and are NOT guaranteed
 # to be the default values set in the related Vagrantfile.
 
-#bridged_adapter: eth0
+# If false, the shell provisioners will run as the vagrant user
+#run_as_root: false
+
+#vm_name:          vagrant-hdub-tech-kalilinux-rolling
+#hostname:         hdub-tech-kali
+#bridged_adapter:  eth0
+
+# The following will map to /vagrant in the VM
+#local_shared_dir: .
+
+# Only tested with bash/zsh
+#preferred_shell:  bash
+
+# These will be installed as root regardless of run_as_root setting
+# Note: The Python dependencies will already be installed for you
+#apt_packages:
+#  - jq
+#  - meld
+#  - podman
+#  - procyon-decompiler
+#  - shellcheck
+#  - tree
+#  - vim
+
+# The directory to run git clone in...
+#git_repos_dir: /opt
+# ...and the projects to clone there
+#git_repos:
+  # Uncomment pipx_projects below to install impacket
+#  - https://github.com/fortra/impacket
+  # Uncomment sdkman in curl_bash_projects below and relevant sections of
+  # custom_setup_script below to setup cfr
+#  - https://github.com/leibnitz27/cfr
+#  - https://github.com/ly4k/Certipy
+
+# The version of Python to install with pyenv and set as the pyenv global default
+#python_version: 3.13
+# Packages to install with pip into pyenv $python_version (pip and pipx already
+# installed and upgraded)
+#pip_packages:
+#  - boto3
+# Full path to projects to install with pipx using pyenv $python_version
+#pipx_projects:
+#  - "$git_repos_dir/impacket"
+
+# The directory to run wget and tar in...
+#tarballs_dir: /opt
+# ...and the tarballs to use for it
+#tarballs:
+#  - https://download.jetbrains.com/idea/ideaIC-2025.1.3.tar.gz
+
+# Projects to install with curl | bash light help me
+#curl_bash_projects:
+  # Uncomment relevant sections of custom_setup_script below to setup sdkman and install a version of Java
+#  - https://get.sdkman.io
+
+# Put your commands here to install project dependencies and set your nicities.
+# This script has access to $git_repos_dir
+#custom_setup_script: |
+#  set -e                           # Exit on error
+#  echo -n "INFO: Running custom_setup_script as " && whoami
+#
+#  # Set-up java utilities
+#  export SDKMAN_DIR="$HOME/.sdkman"
+#  [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+#  sdk install java 11.0.27-zulu  # Need older version for cfr compilation
+#  sdk install maven
+#
+#  # Set-up https://github.com/leibnitz27/cfr and test
+#  cd "${git_repos_dir}/cfr"
+#  mvn compile
+#  java -cp target/classes org.benf.cfr.reader.Main java.lang.Object
+#
+#  # Add non-versioned IntelliJ symlink to be used with desktop shortcut
+#  idea_symlink="${git_repos_dir}/idea"
+#  [ ! -L "${idea_symlink}" ] \
+#    && find "${git_repos_dir}" -type d -name 'idea-IC*' \
+#       -exec sudo ln -s {} "${idea_symlink}" \; \
+#       -exec sh -c 'sudo chown --no-dereference "$(stat -c "%U:%G" "$1")" "$2"' sh {} "${idea_symlink}" \;

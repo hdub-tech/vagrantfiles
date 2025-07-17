@@ -1,119 +1,36 @@
-#                     Copyright H Dub (hdub-tech) 2024
+#                     Copyright H Dub (hdub-tech) 2025
 #        Distributed under the Boost Software License, Version 1.0.
 # See accompanying file LICENSE or copy at https://www.boost.org/LICENSE_1_0.txt
-#                     Kali template - Version 1.0
-#
-# ####################################################################### #
-#                         UPDATE THIS BLOCK BELOW                         #
-# ####################################################################### #
+#                     Kali template - Version 2.0
+
 # Parse overrides file
 require 'yaml'
 overrides_file = 'overrides.yml'
 overrides = File.exist?(overrides_file) ? YAML.load_file(overrides_file) : {}
 
-$vm_name = "vagrant-hdub-tech-kalilinux-rolling"
-$hostname = "hdub-tech-kali"
-$bridged_adapter = overrides['bridged_adapter'] || "eth0"
-
-# Only tested with bash/zsh
-$preferred_shell = "bash"
-
-# The folder on your system to share at /vagrant in the VM
-$local_shared_dir = "."
-
-# If false, the shell provisioners will run as the vagrant user
-$run_as_root = false
-
-# The version of Python to install with pyenv and set as the pyenv global default
-$python_version = "3.13"
-
-# These will be installed as root regardless of $run_as_root
-$apt_packages = [
-  "jq",
-  "meld",
-  "podman",
-  "procyon-decompiler",
-  "shellcheck",
-  "tree",
-  "vim"
-]
-
-# The directory to run git clone from
-$git_repos_dir = "/opt"
-$git_repos = [
-  "https://github.com/fortra/impacket",
-  "https://github.com/leibnitz27/cfr",
-  "https://github.com/ly4k/Certipy"
-]
-
-# Tarballs. These will be unzipped to $git_repos_dir
-$tarballs = [
-  "https://download.jetbrains.com/idea/ideaIC-2025.1.3.tar.gz"
-]
-
-# Packages to install with pip into pyenv $python_version (pipx already installed)
-$pip_packages = [
-]
-
-# Full path to projects to install with pipx using pyenv $python_version
-$pipx_projects = [
-  "#{$git_repos_dir}/impacket"
-]
-
-# Projects to install with curl | bash light help me
-$curl_bash_projects = [
-  "https://get.sdkman.io"
-]
-
-# Custom setup and nicities script
-$custom_setup_script = <<~CUSTOM_SETUP_SCRIPT
-  # PUT YOUR COMMANDS HERE TO INSTALL PROJECT DEPENDENCIES AND SET YOUR NICITIES.
-  # NOTE: pip is already upgraded for you. Feel free to remove what you don't want/need.
-  set -e                           # Exit on error
-  echo -n "INFO: Running as " && whoami
-
-  # Set-up java utilities
-  export SDKMAN_DIR="$HOME/.sdkman"
-  [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-  sdk install java 11.0.27-zulu  # Need older version for cfr compilation
-  sdk install maven
-
-  # Set-up cfr and test
-  cd /opt/cfr
-  mvn compile
-  java -cp target/classes org.benf.cfr.reader.Main java.lang.Object
-
-  # Add non-versioned IntelliJ symlink to be used with desktop shortcut
-  [ ! -L /opt/idea ] && find /opt -type d -name 'idea*' -exec sudo ln -s \\{} /opt/idea \\;
-
-  # Always start in the project/mounted dir at login
-  #if ! grep -q "cd /vagrant" ~/.#{$preferred_shell}rc; then echo "cd /vagrant" | tee -a ~/.#{$preferred_shell}rc; fi
-  #cd /vagrant                      # Change to the project/mounted dir
-CUSTOM_SETUP_SCRIPT
-# ####################################################################### #
-#                         UPDATE THIS BLOCK ABOVE                         #
-# ####################################################################### #
-
 Vagrant.configure("2") do |config|
 
+  vm_name = overrides['vm_name'] || "vagrant-hdub-tech-kalilinux-rolling"
+
   # Name the VM specifically
-  config.vm.define $vm_name do |kali|
+  config.vm.define vm_name do |kali|
     # Official Kali image
     kali.vm.box = "kalilinux/rolling"
-    kali.vm.hostname = $hostname
-    kali.vm.synced_folder $local_shared_dir, "/vagrant"
-    kali.vm.network "public_network", bridge: $bridged_adapter
+    kali.vm.hostname = overrides['hostname'] || "hdub-tech-kali"
+    kali.vm.synced_folder overrides['local_shared_dir'] || '.', "/vagrant"
+    kali.vm.network "public_network", bridge: overrides['bridged_adapter'] || "eth0"
 
     # VirtualBox configuration
     kali.vm.provider "virtualbox" do |vb|
       # Name in VirtualBox
-      vb.name = $vm_name
+      vb.name = vm_name
       # Disable Remote Display server ffs Kali
       vb.customize ["modifyvm", :id, "--vrde=off"]
     end
 
     # Install requested apt packages and fix grub-pc
-    kali.vm.provision "Install specified apt packages #{$apt_packages} and Python dependency packages", type: "shell", privileged: true, inline: <<~APT_SCRIPT
+    apt_packages = overrides['apt_packages'] || []
+    kali.vm.provision "Install specified apt packages #{apt_packages} and Python dependency packages", type: "shell", privileged: true, inline: <<~APT_SCRIPT
       # Update Kali keyring
       wget https://archive.kali.org/archive-keyring.gpg -O /usr/share/keyrings/kali-archive-keyring.gpg
 
@@ -132,18 +49,20 @@ Vagrant.configure("2") do |config|
       # Run apt
       apt-get update
       apt-get --yes $apt_dpkg_opts upgrade
-      apt-get --yes install #{$apt_packages.join(' ')} \
+      apt-get --yes install #{apt_packages.join(' ')} \
                             curl git gcc make zlib1g-dev libssl-dev libffi-dev libsqlite3-dev \
                             libbz2-dev libreadline-dev liblzma-dev
     APT_SCRIPT
 
     # Preferred shell - need to update before modifying settings in rc files
-    primary_user = $run_as_root ? 'root' : 'vagrant'
-    kali.vm.provision "Set #{primary_user}'s preferred shell to #{$preferred_shell}", type: "shell", privileged: true, inline: "chsh -s /usr/bin/#{$preferred_shell} #{primary_user}"
+    run_as_root = overrides['run_as_root'] || false
+    primary_user = run_as_root ? 'root' : 'vagrant'
+    preferred_shell = overrides['preferred_shell'] || "bash"
+    kali.vm.provision "Set #{primary_user}'s preferred shell to #{preferred_shell}", type: "shell", privileged: true, inline: "chsh -s /usr/bin/#{preferred_shell} #{primary_user}"
 
     # Install and setup pyenv
     pyenvrc_file = "/etc/profile.d/pyenvrc"
-    kali.vm.provision "Install and setup pyenv", type: "shell", privileged: $run_as_root, inline: <<~PYENV_SETUP_SCRIPT
+    kali.vm.provision "Install and setup pyenv", type: "shell", privileged: run_as_root, inline: <<~PYENV_SETUP_SCRIPT
       set -e
       # Install pyenv if not already there
       if [ ! -e ~/.pyenv ]; then
@@ -154,43 +73,47 @@ Vagrant.configure("2") do |config|
         echo "WARNING: ~/.pyenv exists - Skipping pyenv installation" 1>&2
       fi
 	# The BASH Heredocs must use tabs: https://www.shellcheck.net/wiki/SC1040
-        echo "INFO: Creating #{pyenvrc_file} to be sourced in ~/.#{$preferred_shell}rc with contents:"
+        echo "INFO: Creating #{pyenvrc_file} to be sourced in ~/.#{preferred_shell}rc with contents:"
 	cat <<-'PYRC' | sudo tee #{pyenvrc_file}  # Deliberate no -a
 		export PYENV_ROOT="$HOME/.pyenv"
 		command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
 		eval "$(pyenv init -)"
 	PYRC
-      echo "INFO: Adding ". #{pyenvrc_file}" to ~/.#{$preferred_shell}rc and ~/.profile, only if not already there"
-      if ! grep -q #{pyenvrc_file} ~/.#{$preferred_shell}rc; then echo ". #{pyenvrc_file}" | tee -a ~/.#{$preferred_shell}rc; fi
+      echo "INFO: Adding ". #{pyenvrc_file}" to ~/.#{preferred_shell}rc and ~/.profile, only if not already there"
+      if ! grep -q #{pyenvrc_file} ~/.#{preferred_shell}rc; then echo ". #{pyenvrc_file}" | tee -a ~/.#{preferred_shell}rc; fi
       if ! grep -q #{pyenvrc_file} ~/.profile; then echo ". #{pyenvrc_file}" | tee -a ~/.profile; fi
     PYENV_SETUP_SCRIPT
 
     # Install specified Python version using pyenv and set as global default
-    kali.vm.provision "Install Python #{$python_version}, set as global default version and install #{$pip_packages}", type: "shell", privileged: $run_as_root, inline: <<~PYENV_INSTALL_SCRIPT
+    python_version = overrides['python_version'] || "3.13"
+    pip_packages = overrides['pip_packages'] || []
+    kali.vm.provision "Install Python #{python_version}, set as global default version and install #{pip_packages}", type: "shell", privileged: run_as_root, inline: <<~PYENV_INSTALL_SCRIPT
       set -e
       . #{pyenvrc_file}
-      pyenv install --skip-existing #{$python_version} 2>&1
-      pyenv global #{$python_version}
-      pip install -U pip pipx #{$pip_packages.join(' ')}
+      pyenv install --skip-existing #{python_version} 2>&1
+      pyenv global #{python_version}
+      pip install -U pip pipx #{pip_packages.join(' ')}
     PYENV_INSTALL_SCRIPT
 
     # Clone specified git repos, if specified
-    if $git_repos.length > 0
-      kali.vm.provision "Cloning specified git_repos to #{$git_repos_dir}", type: "shell", privileged: $run_as_root, inline: <<~GIT_REPOS_SCRIPT
+    git_repos_dir = overrides['git_repos_dir'] || '/opt'
+    git_repos = overrides['git_repos'] || []
+    if git_repos.length > 0
+      kali.vm.provision "Cloning specified git_repos to #{git_repos_dir}", type: "shell", privileged: run_as_root, inline: <<~GIT_REPOS_SCRIPT
         set -e
         clone_needs_sudo=""
-        if [ -d #{$git_repos_dir} ]; then
-          user_writable_git_dir=$( find #{$git_repos_dir} -maxdepth 0 -writable )
-          if [ "#{$git_repos_dir}" != "$user_writable_git_dir" ]; then
+        if [ -d #{git_repos_dir} ]; then
+          user_writable_git_dir=$( find #{git_repos_dir} -maxdepth 0 -writable )
+          if [ "#{git_repos_dir}" != "$user_writable_git_dir" ]; then
             clone_needs_sudo="sudo"
           fi
         else
-          mkdir #{$git_repos_dir}
+          mkdir #{git_repos_dir}
         fi
-        cd #{$git_repos_dir}
-        for url in `echo #{$git_repos.join(' ')}`; do
+        cd #{git_repos_dir}
+        for url in `echo #{git_repos.join(' ')}`; do
           project_dir=${url##http*/}
-          echo "INFO: Cloning $url to #{$git_repos_dir}/$project_dir..."
+          echo "INFO: Cloning $url to #{git_repos_dir}/$project_dir..."
           if [ ! -d $project_dir ]; then
             $clone_needs_sudo git clone $url
             if (("${#clone_needs_sudo}" > 0)); then sudo chown -R #{primary_user} $project_dir; fi
@@ -202,12 +125,14 @@ Vagrant.configure("2") do |config|
     end
 
     # pipx install specified projects, if specified
-    if $pipx_projects.length > 0
+    pipx_projects = overrides['pipx_projects'] || []
+    if pipx_projects.length > 0
       # TODO make more efficient as bash loop
-      $pipx_projects.each do |path|
-        kali.vm.provision "pipx installing #{path}", type: "shell", privileged: $run_as_root, inline: <<~PIPX_INSTALL_SCRIPT
+      pipx_projects.each do |path|
+        kali.vm.provision "pipx installing #{path}", type: "shell", privileged: run_as_root, inline: <<~PIPX_INSTALL_SCRIPT
           set -e
           . #{pyenvrc_file}
+          git_repos_dir=#{git_repos_dir}
           pipx install #{path}
         PIPX_INSTALL_SCRIPT
       end
@@ -217,10 +142,11 @@ Vagrant.configure("2") do |config|
     end
 
     # curl | bash install specified projects, if specified
-    if $curl_bash_projects.length > 0
+    curl_bash_projects = overrides['curl_bash_projects'] || []
+    if curl_bash_projects.length > 0
       # TODO make more efficient as bash loop
-      $curl_bash_projects.each do |url|
-        kali.vm.provision "curl|bash installing #{url}", type: "shell", privileged: $run_as_root, inline: <<~CURL_BASH_INSTALL_SCRIPT
+      curl_bash_projects.each do |url|
+        kali.vm.provision "curl|bash installing #{url}", type: "shell", privileged: run_as_root, inline: <<~CURL_BASH_INSTALL_SCRIPT
           set -e
           curl "#{url}" | bash
         CURL_BASH_INSTALL_SCRIPT
@@ -228,18 +154,22 @@ Vagrant.configure("2") do |config|
     end
 
     # Unzip various tarballs
-    if $tarballs.length > 0
+    tarballs = overrides['tarballs'] || []
+    if tarballs.length > 0
+      tarballs_dir = overrides['tarballs_dir'] || '/opt'
       # TODO make more efficient as bash loop
-      $tarballs.each do |tarball_url|
-        kali.vm.provision "Downloading and extracting #{tarball_url} to #{$git_repos_dir}", type: "shell", privileged: $run_as_root, inline: <<~TARBALL_WGET_EXTRACT
+      tarballs.each do |tarball_url|
+        kali.vm.provision "Downloading and extracting #{tarball_url} to #{tarballs_dir}", type: "shell", privileged: run_as_root, inline: <<~TARBALL_WGET_EXTRACT
           set -e
-          cd "#{$git_repos_dir}"
+          cd "#{tarballs_dir}"
           tarfile=$( basename #{tarball_url} )
-          if [ ! -f "#{$git_repos_dir}/${tarfile}" ]; then
+          if [ ! -f "#{tarballs_dir}/${tarfile}" ]; then
             sudo wget --no-verbose "#{tarball_url}"
             project_dir=$( tar tf $tarfile | head -n1 )
             sudo tar xzf $tarfile
             sudo chown -R #{primary_user} $project_dir
+          else
+            echo "WARNING: #{tarballs_dir}/$tarfile already exists - skipping" 1>&2
           fi
         TARBALL_WGET_EXTRACT
       end
@@ -257,10 +187,14 @@ Vagrant.configure("2") do |config|
     end
 
     # Run custom specific setup script
-    kali.vm.provision "Run custom setup script", type: "shell", privileged: $run_as_root, inline: <<~SETUP_SCRIPT
-      #{$custom_setup_script}
-      echo "INFO: Copying this script to the shared directory in case it needs to be run again, excluding this comment/cmd"
-      cat /tmp/vagrant-shell | head -n -2 | sed -e '1i#!/usr/bin/env bash' | tee /vagrant/vagrant-custom-setup.sh  # delib no -a
-    SETUP_SCRIPT
+    custom_setup_script = overrides['custom_setup_script'] || ''
+    if !custom_setup_script.empty?
+      kali.vm.provision "Run custom setup script", type: "shell", privileged: run_as_root, inline: <<~SETUP_SCRIPT
+        git_repos_dir=#{git_repos_dir}
+        #{custom_setup_script}
+        echo "INFO: Copying this script to the shared directory in case it needs to be run again, excluding this comment/cmd"
+        cat /tmp/vagrant-shell | head -n -2 | sed -e '1i#!/usr/bin/env bash' | tee /vagrant/vagrant-custom-setup.sh  # delib no -a
+      SETUP_SCRIPT
+    end
   end
 end
