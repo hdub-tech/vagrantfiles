@@ -3,22 +3,23 @@
 # See accompanying file LICENSE or copy at https://www.boost.org/LICENSE_1_0.txt
 #                     Kali template - Version 2.0
 
-# Parse overrides file
+# Parse defaults and overrides file, if existing.
 require 'yaml'
+defaults = YAML.load_file('defaults.yml')
 overrides_file = 'overrides.yml'
 overrides = File.exist?(overrides_file) ? YAML.load_file(overrides_file) : {}
 
 Vagrant.configure("2") do |config|
 
-  vm_name = overrides['vm_name'] || "vagrant-hdub-tech-kalilinux-rolling"
+  vm_name = overrides['vm_name'] || defaults['vm_name']
 
   # Name the VM specifically
   config.vm.define vm_name do |kali|
     # Official Kali image
     kali.vm.box = "kalilinux/rolling"
-    kali.vm.hostname = overrides['hostname'] || "hdub-tech-kali"
-    kali.vm.synced_folder overrides['local_shared_dir'] || '.', "/vagrant"
-    kali.vm.network "public_network", bridge: overrides['bridged_adapter'] || "eth0"
+    kali.vm.hostname = overrides['hostname'] || defaults['hostname']
+    kali.vm.synced_folder overrides['local_shared_dir'] || defaults['local_shared_dir'], "/vagrant"
+    kali.vm.network "public_network", bridge: overrides['bridged_adapter'] || defaults['bridged_adapter']
 
     # VirtualBox configuration
     kali.vm.provider "virtualbox" do |vb|
@@ -29,7 +30,7 @@ Vagrant.configure("2") do |config|
     end
 
     # Install requested apt packages and fix grub-pc
-    apt_packages = overrides['apt_packages'] || []
+    apt_packages = overrides['apt_packages'] || defaults['apt_packages']
     kali.vm.provision "Install specified apt packages #{apt_packages} and Python dependency packages", type: "shell", privileged: true, inline: <<~APT_SCRIPT
       # Update Kali keyring
       wget https://archive.kali.org/archive-keyring.gpg -O /usr/share/keyrings/kali-archive-keyring.gpg
@@ -55,9 +56,9 @@ Vagrant.configure("2") do |config|
     APT_SCRIPT
 
     # Preferred shell - need to update before modifying settings in rc files
-    run_as_root = overrides['run_as_root'] || false
+    run_as_root = overrides['run_as_root'] || defaults['run_as_root']
     primary_user = run_as_root ? 'root' : 'vagrant'
-    preferred_shell = overrides['preferred_shell'] || "bash"
+    preferred_shell = overrides['preferred_shell'] || defaults['preferred_shell']
     kali.vm.provision "Set #{primary_user}'s preferred shell to #{preferred_shell}", type: "shell", privileged: true, inline: "chsh -s /usr/bin/#{preferred_shell} #{primary_user}"
 
     # Install and setup pyenv
@@ -85,8 +86,8 @@ Vagrant.configure("2") do |config|
     PYENV_SETUP_SCRIPT
 
     # Install specified Python version using pyenv and set as global default
-    python_version = overrides['python_version'] || "3.13"
-    pip_packages = overrides['pip_packages'] || []
+    python_version = overrides['python_version'] || defaults['python_version']
+    pip_packages = overrides['pip_packages'] || defaults['pip_packages']
     kali.vm.provision "Install Python #{python_version}, set as global default version and install #{pip_packages}", type: "shell", privileged: run_as_root, inline: <<~PYENV_INSTALL_SCRIPT
       set -e
       . #{pyenvrc_file}
@@ -96,8 +97,8 @@ Vagrant.configure("2") do |config|
     PYENV_INSTALL_SCRIPT
 
     # Clone specified git repos, if specified
-    git_repos_dir = overrides['git_repos_dir'] || '/opt'
-    git_repos = overrides['git_repos'] || []
+    git_repos_dir = overrides['git_repos_dir'] || defaults['git_repos_dir']
+    git_repos = overrides['git_repos'] || defaults['git_repos']
     if git_repos.length > 0
       kali.vm.provision "Cloning specified git_repos to #{git_repos_dir}", type: "shell", privileged: run_as_root, inline: <<~GIT_REPOS_SCRIPT
         set -e
@@ -125,7 +126,7 @@ Vagrant.configure("2") do |config|
     end
 
     # pipx install specified projects, if specified
-    pipx_projects = overrides['pipx_projects'] || []
+    pipx_projects = overrides['pipx_projects'] || defaults['pipx_projects']
     if pipx_projects.length > 0
       # TODO make more efficient as bash loop
       pipx_projects.each do |path|
@@ -142,7 +143,7 @@ Vagrant.configure("2") do |config|
     end
 
     # curl | bash install specified projects, if specified
-    curl_bash_projects = overrides['curl_bash_projects'] || []
+    curl_bash_projects = overrides['curl_bash_projects'] || defaults['curl_bash_projects']
     if curl_bash_projects.length > 0
       # TODO make more efficient as bash loop
       curl_bash_projects.each do |url|
@@ -154,9 +155,9 @@ Vagrant.configure("2") do |config|
     end
 
     # Decompress various downloaded apps
-    compressed_app_urls = overrides['compressed_app_urls'] || []
+    compressed_app_urls = overrides['compressed_app_urls'] || defaults['compressed_app_urls']
     if compressed_app_urls.length > 0
-      apps_dir = overrides['apps_dir'] || '/opt'
+      apps_dir = overrides['apps_dir'] || defaults['apps_dir']
       # TODO make more efficient as bash loop
       compressed_app_urls.each do |compressed_app_url|
         kali.vm.provision "Downloading and extracting #{compressed_app_url} to #{apps_dir}", type: "shell", privileged: run_as_root, inline: <<~WGET_EXTRACT
@@ -197,7 +198,7 @@ Vagrant.configure("2") do |config|
     end
 
     # Run custom specific setup script
-    custom_setup_script = overrides['custom_setup_script'] || ''
+    custom_setup_script = overrides['custom_setup_script'] || defaults['custom_setup_script']
     if !custom_setup_script.empty?
       kali.vm.provision "Run custom setup script", type: "shell", privileged: run_as_root, inline: <<~SETUP_SCRIPT
         git_repos_dir=#{git_repos_dir}
