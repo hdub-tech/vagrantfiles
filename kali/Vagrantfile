@@ -153,25 +153,35 @@ Vagrant.configure("2") do |config|
       end
     end
 
-    # Unzip various tarballs
-    tarballs = overrides['tarballs'] || []
-    if tarballs.length > 0
-      tarballs_dir = overrides['tarballs_dir'] || '/opt'
+    # Decompress various downloaded apps
+    compressed_app_urls = overrides['compressed_app_urls'] || []
+    if compressed_app_urls.length > 0
+      apps_dir = overrides['apps_dir'] || '/opt'
       # TODO make more efficient as bash loop
-      tarballs.each do |tarball_url|
-        kali.vm.provision "Downloading and extracting #{tarball_url} to #{tarballs_dir}", type: "shell", privileged: run_as_root, inline: <<~TARBALL_WGET_EXTRACT
+      compressed_app_urls.each do |compressed_app_url|
+        kali.vm.provision "Downloading and extracting #{compressed_app_url} to #{apps_dir}", type: "shell", privileged: run_as_root, inline: <<~WGET_EXTRACT
           set -e
-          cd "#{tarballs_dir}"
-          tarfile=$( basename #{tarball_url} )
-          if [ ! -f "#{tarballs_dir}/${tarfile}" ]; then
-            sudo wget --no-verbose "#{tarball_url}"
-            project_dir=$( tar tf $tarfile | head -n1 )
-            sudo tar xzf $tarfile
+          cd "#{apps_dir}"
+          compressed_file=$( basename "#{compressed_app_url}" )
+          if [ ! -f "#{apps_dir}/${compressed_file}" ]; then
+            sudo wget --no-verbose "#{compressed_app_url}"
+            project_dir=
+            case "$compressed_file" in
+              *.zip)
+                project_dir=$( unzip -lq $compressed_file | head -n3 | tail -n1 | awk '{print $4}' | cut -d\/ -f1 )
+                sudo unzip -q $compressed_file
+                ;;
+              *.tar.gz)
+                project_dir=$( tar tf $compressed_file | head -n1 )
+                sudo tar xzf $compressed_file
+                ;;
+              *) echo "WARNING: #{compressed_app_url} has an unsupported extension. Downloaded only!" ;;
+            esac
             sudo chown -R #{primary_user} $project_dir
           else
-            echo "WARNING: #{tarballs_dir}/$tarfile already exists - skipping" 1>&2
+            echo "WARNING: #{apps_dir}/$compressed_file already exists - skipping" 1>&2
           fi
-        TARBALL_WGET_EXTRACT
+        WGET_EXTRACT
       end
     end
 
