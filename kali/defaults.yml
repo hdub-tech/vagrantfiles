@@ -66,7 +66,7 @@ curl_bash_projects:
   - https://get.sdkman.io
 
 # Put your commands here to install project dependencies and set your nicities.
-# This script has access to $git_repos_dir variable
+# This script has access to $git_repos_dir and $apps_dir variables
 custom_setup_script: |
   set -e                           # Exit on error
   echo -n "INFO: Running custom_setup_script as " && whoami
@@ -83,8 +83,8 @@ custom_setup_script: |
   java -cp target/classes org.benf.cfr.reader.Main java.lang.Object
 
   # Add non-versioned IntelliJ symlink to be used with desktop shortcut
-  idea_symlink="${git_repos_dir}/idea"
+  idea_symlink="${apps_dir}/idea"
   [ ! -L "${idea_symlink}" ] \
-    && find "${git_repos_dir}" -type d -name 'idea-IC*' \
+    && find "${apps_dir}" -type d -name 'idea-IC*' \
        -exec sudo ln -s {} "${idea_symlink}" \; \
        -exec sh -c 'sudo chown --no-dereference "$(stat -c "%U:%G" "$1")" "$2"' sh {} "${idea_symlink}" \;

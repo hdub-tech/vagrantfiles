@@ -162,6 +162,11 @@ Vagrant.configure("2") do |config|
       compressed_app_urls.each do |compressed_app_url|
         kali.vm.provision "Downloading and extracting #{compressed_app_url} to #{apps_dir}", type: "shell", privileged: run_as_root, inline: <<~WGET_EXTRACT
           set -e
+          if [ ! -d "#{apps_dir}" ]; then
+            mkdir --parents "#{apps_dir}"
+            chown --recursive "#{primary_user}" "#{apps_dir}"
+          fi
+
           cd "#{apps_dir}"
           compressed_file=$( basename "#{compressed_app_url}" )
           if [ ! -f "#{apps_dir}/${compressed_file}" ]; then
@@ -192,7 +197,9 @@ Vagrant.configure("2") do |config|
     Dir.glob("shortcuts/*.desktop") do |s|
       shortcut = File.basename(s)
       kali.vm.provision "Set copied shortcut #{shortcut} to 'secure'", type: "shell", privileged: run_as_root, inline: <<~SECURE_SHORTCUTS
+        set -e
         shortcut_path=~/Desktop/"#{shortcut}"
+        sed -i'' -e "s|\\$apps_dir|#{apps_dir}|" -e "s|\\$git_repos_dir|#{git_repos_dir}|" $shortcut_path
         gio set -t string $shortcut_path metadata::xfce-exe-checksum "$( sha256sum "$shortcut_path" | awk '{print $1}')"
       SECURE_SHORTCUTS
     end
@@ -202,6 +209,7 @@ Vagrant.configure("2") do |config|
     if !custom_setup_script.empty?
       kali.vm.provision "Run custom setup script", type: "shell", privileged: run_as_root, inline: <<~SETUP_SCRIPT
         git_repos_dir=#{git_repos_dir}
+        apps_dir=#{apps_dir}
         #{custom_setup_script}
         echo "INFO: Copying this script to the shared directory in case it needs to be run again, excluding this comment/cmd"
         cat /tmp/vagrant-shell | head -n -2 | sed -e '1i#!/usr/bin/env bash' | tee /vagrant/vagrant-custom-setup.sh  # delib no -a
