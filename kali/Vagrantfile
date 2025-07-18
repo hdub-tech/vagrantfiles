@@ -19,7 +19,9 @@ Vagrant.configure("2") do |config|
     kali.vm.box = "kalilinux/rolling"
     kali.vm.hostname = overrides['hostname'] || defaults['hostname']
     kali.vm.synced_folder overrides['local_shared_dir'] || defaults['local_shared_dir'], "/vagrant"
-    kali.vm.network "public_network", bridge: overrides['bridged_adapter'] || defaults['bridged_adapter']
+    if overrides['bridged_adapter'] && overrides['bridged_adapter'] != "disabled" then
+      kali.vm.network "public_network", bridge: overrides['bridged_adapter'] || defaults['bridged_adapter']
+    end
 
     # VirtualBox configuration
     kali.vm.provider "virtualbox" do |vb|

@@ -10,6 +10,7 @@ run_as_root: false
 
 vm_name:          hdub-tech-kali
 hostname:         hdub-tech-kali
+# set to "disabled" to skip creation
 bridged_adapter:  eth0
 
 # The following will map to /vagrant in the VM
