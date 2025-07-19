@@ -50,6 +50,7 @@ python_version: 3.13
 pip_packages:
   - boto3
 # Full path to projects to install with pipx using pyenv $python_version
+# $git_repos_dir and $apps_dir variables supported
 pipx_projects:
   - "$git_repos_dir/impacket"
 
