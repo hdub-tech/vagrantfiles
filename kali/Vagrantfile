@@ -1,7 +1,7 @@
 #                     Copyright H Dub (hdub-tech) 2025
 #        Distributed under the Boost Software License, Version 1.0.
 # See accompanying file LICENSE or copy at https://www.boost.org/LICENSE_1_0.txt
-#                     Kali template - Version 2.0
+#                     Kali template - Version 3.0
 
 # Parse defaults and overrides file, if existing.
 require 'yaml'
@@ -163,7 +163,7 @@ Vagrant.configure("2") do |config|
     if compressed_app_urls.length > 0
       # TODO make more efficient as bash loop
       compressed_app_urls.each do |compressed_app_url|
-        kali.vm.provision "Downloading and extracting #{compressed_app_url} to #{apps_dir}", type: "shell", privileged: run_as_root, inline: <<~WGET_EXTRACT
+        kali.vm.provision "Downloading #{compressed_app_url} to #{apps_dir} and extracting/dpkg installing", type: "shell", privileged: run_as_root, inline: <<~WGET_EXTRACT
           set -e
           if [ ! -d "#{apps_dir}" ]; then
             mkdir --parents "#{apps_dir}"
@@ -184,9 +184,15 @@ Vagrant.configure("2") do |config|
                 project_dir=$( tar tf $compressed_file | head -n1 )
                 sudo tar xzf $compressed_file
                 ;;
+              *.deb)
+                sudo dpkg --install $compressed_file
+                ;;
               *) echo "WARNING: #{compressed_app_url} has an unsupported extension. Downloaded only!" ;;
             esac
-            sudo chown -R #{primary_user} $project_dir
+            # Only chown if has $project_dir
+            if [ -n "$project_dir" ]; then
+              sudo chown -R #{primary_user} "$project_dir"
+            fi
           else
             echo "WARNING: #{apps_dir}/$compressed_file already exists - skipping" 1>&2
           fi
