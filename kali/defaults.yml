@@ -22,13 +22,16 @@ preferred_shell:  bash
 # These will be installed as root regardless of run_as_root setting
 # Note: The Python dependencies will already be installed for you
 apt_packages:
+  - bc
   - ghidra
   - ghidra-dbgsym
+  - git-delta
   - jq
   - meld
   - podman
   - procyon-decompiler
   - shellcheck
+  - strace
   - tree
   - vim
 
