@@ -72,7 +72,7 @@ Before merging ensure:
        
        </details>
     
-    - [ ] Download + extract projects
+    - [ ] Download + extract + checksum projects
        <details>
        
        </details>
@@ -129,7 +129,7 @@ Before merging ensure:
        
        </details>
     
-    - [ ] Download + extract projects
+    - [ ] Download + extract + checksum projects
        <details>
        
        </details>
@@ -204,7 +204,7 @@ Before merging ensure:
        
        </details>
     
-    - [ ] Download + extract projects
+    - [ ] Download + extract + checksum projects
        <details>
        
        </details>
@@ -261,7 +261,7 @@ Before merging ensure:
        
        </details>
     
-    - [ ] Download + extract projects
+    - [ ] Download + extract + checksum projects
        <details>
        
        </details>
