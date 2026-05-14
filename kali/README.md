@@ -49,7 +49,7 @@ This chart contains the list of customizeable variables used by the Vagrantfile.
 | `pip_packages` | Array[String] | The `pip` packages to install into the `pyenv global` default (`pipx` will be installed here already). |
 | `pipx_packages` | Array[String] | A list of directories (full path) which contain Python projects on which `pipx install` will be executed to install them into the `pyenv global` default. `$git_repos_dir` and `$apps_dir` variables supported. |
 | `apps_dir` | String | The directory to download and decompress archives into. |
-| `compressed_app_urls` | Array[String] | The URLs of `zip`/`.tar.gz`/`.deb` files to download to `$apps_dir` and extract to the same directory OR `dpkg --install` if `.deb` |
+| `compressed_app_urls` | Array[JSON] | The URLs of `zip`/`.tar.gz`/`.deb` files to download to `$apps_dir` (with OPTIONAL checksum verification) and extract to the same directory OR `dpkg --install` if `.deb`. JSON format is as follows with only `url` key required and algorithm is any supported by the [`cksum`] command: `{ url: 'https://example.com/app.zip', algorithm: sha256, checksum: 92789c0bd3e1f75b1a03d80e74eb7ea8d3a95e19f7915557774a0ad402674926}` |
 | `curl_bash_projects` | Array[String] | The URLs of sites to run `curl $url \| bash` with |
 | `custom_setup_script` | Heredoc (Squiggly Unquoted)<sup>[4](#4)</sup> | This is where your custom setup script goes. By default, this will setup sdkman, install a cfr compatible version of java and maven, compile and test cfr, and create a non-versioned symlink for Intellij Idea |
 
@@ -67,4 +67,7 @@ Footnotes:
 * 1.0 - Initial Release
 * 2.0 - Add support for default.yml/overrides.yml, configurable bridged adapter, curl_bash_projects, zip/tarballs download/extraction, using apps_dir/git_repos_dir in pipx_packages and custom_setup_script, Desktop shortcuts. Renamed default VM/hostname, upgraded Python, fixed missing primary_user ref, fixed Kali apt key, fixed grub-pc upgrade error, added/installed more tools
 * 3.0 - Add support for `.deb` files, improve `custom_setup_script` output.
-* 4.0 - Add support for BinaryNinja desktop shortcut with icon.
+* 4.0 - Add support for BinaryNinja desktop shortcut with icon, checksum verification for `compressed_app_urls`, udpated pyenv bash env setup per new guidance, switch from no longer available procyon-decompiler to bytecode-viewer (which has procyon builtin), switch from deprecated IDEA Community to combined IDEA, update version of nomachine.
+
+<!-- Links -->
+[`cksum`]: https://man7.org/linux/man-pages/man1/cksum.1.html
