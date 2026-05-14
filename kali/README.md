@@ -38,7 +38,7 @@ This chart contains the list of customizeable variables used by the Vagrantfile.
 | --- | --- | --- |
 | `vm_name` | String | Used as VM name |
 | `hostname` | String | Used as VM hostname |
-| `bridged_adapter` | String | Which interface on the host to bridge to the VM. Needed if doing network scanning. Set to `disabled` to skip.|
+| `bridged_adapter` | String | Which interface on the host to bridge to the VM. Needed if doing network scanning. Set to `disabled` to skip. |
 | `local_shared_dir` | String | The directory on the system which will be mounted to `/vagrant` in the VM |
 | `run_as_root` | boolean | Whether or not to run the shell provisioners as root<sup>[1](#1)</sup>. If false, uses the `vagrant` user |
 | `preferred_shell` | String | Name, not path<sup>[2](#2)</sup>. Used to change the login shell for the (root or vagrant) user (based on `$run_as_root`), in order to update `$HOME/.*rc` files appropriately for pyenv and pipx |
@@ -50,16 +50,16 @@ This chart contains the list of customizeable variables used by the Vagrantfile.
 | `pipx_packages` | Array[String] | A list of directories (full path) which contain Python projects on which `pipx install` will be executed to install them into the `pyenv global` default. `$git_repos_dir` and `$apps_dir` variables supported. |
 | `apps_dir` | String | The directory to download and decompress archives into. |
 | `compressed_app_urls` | Array[String] | The URLs of `zip`/`.tar.gz`/`.deb` files to download to `$apps_dir` and extract to the same directory OR `dpkg --install` if `.deb` |
-| `curl_bash_projects` | Array[String] | The URLs of sites to run `curl $url | bash` with |
+| `curl_bash_projects` | Array[String] | The URLs of sites to run `curl $url \| bash` with |
 | `custom_setup_script` | Heredoc (Squiggly Unquoted)<sup>[4](#4)</sup> | This is where your custom setup script goes. By default, this will setup sdkman, install a cfr compatible version of java and maven, compile and test cfr, and create a non-versioned symlink for Intellij Idea |
 
 ---
 Footnotes:
 
-  * <a id=1>1</a> - The apt install and chsh provisioners will be run as root regardless of this setting.
-  * <a id=2>2</a> - Example: `bash`. Only tested with `bash` and `zsh`.
-  * <a id=3>3</a> - If `$run_as_root` is false and the non-root user doesn't have write perms in the specified `$git_repos_dir`, `sudo` will be used with the `git clone` operation seeing as the Vagrantfile can run sudo anyways. As an example, `/opt` is a traditional directory to throw optional additional software, and the default for this Vagrantfile, but the `vagrant` user cannot write there without `sudo`. The cloned directories (NOT `$git_repos_dir` itself), will have their ownership changed to the non-root user in this situation.
-  * <a id=4>4</a> Aka Interpolation and Esacaping is enabled, indentation is allowed but will be cleaned up on the final script.
+* <a id=1>1</a> - The apt install and chsh provisioners will be run as root regardless of this setting.
+* <a id=2>2</a> - Example: `bash`. Only tested with `bash` and `zsh`.
+* <a id=3>3</a> - If `$run_as_root` is false and the non-root user doesn't have write perms in the specified `$git_repos_dir`, `sudo` will be used with the `git clone` operation seeing as the Vagrantfile can run sudo anyways. As an example, `/opt` is a traditional directory to throw optional additional software, and the default for this Vagrantfile, but the `vagrant` user cannot write there without `sudo`. The cloned directories (NOT `$git_repos_dir` itself), will have their ownership changed to the non-root user in this situation.
+* <a id=4>4</a> Aka Interpolation and Esacaping is enabled, indentation is allowed but will be cleaned up on the final script.
 
 ---
 ## Changelog
