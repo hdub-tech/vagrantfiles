@@ -95,3 +95,6 @@ custom_setup_script: |
     && find "${apps_dir}" -type d -name 'idea-IC*' \
        -exec sudo ln -s {} "${idea_symlink}" \; \
        -exec sh -c 'sudo chown --no-dereference "$(stat -c "%U:%G" "$1")" "$2"' sh {} "${idea_symlink}" \;
+
+  echo "==> INFO: Download BinaryNinja icon to be used with desktop shortcut"
+  wget https://binary.ninja/icons/android-chrome-512x512.png --output-document "${apps_dir}/binaryninja/binaryninja.png"

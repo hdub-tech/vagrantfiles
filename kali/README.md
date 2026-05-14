@@ -67,3 +67,4 @@ Footnotes:
 * 1.0 - Initial Release
 * 2.0 - Add support for default.yml/overrides.yml, configurable bridged adapter, curl_bash_projects, zip/tarballs download/extraction, using apps_dir/git_repos_dir in pipx_packages and custom_setup_script, Desktop shortcuts. Renamed default VM/hostname, upgraded Python, fixed missing primary_user ref, fixed Kali apt key, fixed grub-pc upgrade error, added/installed more tools
 * 3.0 - Add support for `.deb` files, improve `custom_setup_script` output.
+* 4.0 - Add support for BinaryNinja desktop shortcut with icon.

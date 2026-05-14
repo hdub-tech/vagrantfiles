@@ -96,6 +96,9 @@ custom_setup_script: |
        -exec sudo ln -s {} "${idea_symlink}" \; \
        -exec sh -c 'sudo chown --no-dereference "$(stat -c "%U:%G" "$1")" "$2"' sh {} "${idea_symlink}" \;
 
+  echo "==> INFO: Download BinaryNinja icon to be used with desktop shortcut"
+  wget https://binary.ninja/icons/android-chrome-512x512.png --output-document "${apps_dir}/binaryninja/binaryninja.png"
+
   echo "==> INFO: Install netbird and netbird-ui, if not already"
   which netbird || curl -fsSL https://pkgs.netbird.io/install.sh | sh
   # For some reason install script does not detect desktop environment
