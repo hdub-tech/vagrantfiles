@@ -23,13 +23,14 @@ preferred_shell:  bash
 # Note: The Python dependencies will already be installed for you
 apt_packages:
   - bc
+  - bytecode-viewer
   - ghidra
   - ghidra-dbgsym
   - git-delta
   - jq
   - meld
   - podman
-  - procyon-decompiler
+    # - procyon-decompiler
   - shellcheck
   - strace
   - tree
