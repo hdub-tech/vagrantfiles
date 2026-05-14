@@ -79,8 +79,8 @@ Vagrant.configure("2") do |config|
         echo "INFO: Creating #{pyenvrc_file} to be sourced in ~/.#{preferred_shell}rc with contents:"
 	cat <<-'PYRC' | sudo tee #{pyenvrc_file}  # Deliberate no -a
 		export PYENV_ROOT="$HOME/.pyenv"
-		command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
-		eval "$(pyenv init -)"
+		[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+		eval "$(pyenv init - bash)"
 	PYRC
       echo "INFO: Adding ". #{pyenvrc_file}" to ~/.#{preferred_shell}rc and ~/.profile, only if not already there"
       if ! grep -q #{pyenvrc_file} ~/.#{preferred_shell}rc; then echo ". #{pyenvrc_file}" | tee -a ~/.#{preferred_shell}rc; fi
