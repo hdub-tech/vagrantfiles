@@ -163,7 +163,7 @@ Vagrant.configure("2") do |config|
     if compressed_app_urls.length > 0
       # TODO make more efficient as bash loop
       compressed_app_urls.each do |compressed_app_url|
-        kali.vm.provision "Downloading #{compressed_app_url} to #{apps_dir} and extracting/dpkg installing", type: "shell", privileged: run_as_root, inline: <<~WGET_EXTRACT
+        kali.vm.provision "Downloading #{compressed_app_url['url']} to #{apps_dir} and extracting/dpkg installing", type: "shell", privileged: run_as_root, inline: <<~WGET_EXTRACT
           set -e
           if [ ! -d "#{apps_dir}" ]; then
             mkdir --parents "#{apps_dir}"
@@ -171,9 +171,16 @@ Vagrant.configure("2") do |config|
           fi
 
           cd "#{apps_dir}"
-          compressed_file=$( basename "#{compressed_app_url}" )
+          compressed_file=$( basename "#{compressed_app_url['url']}" )
           if [ ! -f "#{apps_dir}/${compressed_file}" ]; then
-            sudo wget --no-verbose "#{compressed_app_url}"
+            sudo wget --no-verbose "#{compressed_app_url['url']}"
+            # Checksum validation, if provided
+            if [[ -n "#{compressed_app_url['checksum']}" && -n "#{compressed_app_url['algorithm']}" ]]; then
+              algorithm="#{compressed_app_url['algorithm']}"
+              checksum_file="${compressed_file}.${algorithm}"
+              echo "#{compressed_app_url['checksum']} $compressed_file" | sudo tee $checksum_file
+              sudo cksum --algorithm $algorithm --check $checksum_file
+            fi
             project_dir=
             case "$compressed_file" in
               *.zip)
@@ -187,7 +194,7 @@ Vagrant.configure("2") do |config|
               *.deb)
                 sudo dpkg --install $compressed_file
                 ;;
-              *) echo "WARNING: #{compressed_app_url} has an unsupported extension. Downloaded only!" ;;
+              *) echo "WARNING: #{compressed_app_url['url']} has an unsupported extension. Downloaded only!" ;;
             esac
             # Only chown if has $project_dir
             if [ -n "$project_dir" ]; then
