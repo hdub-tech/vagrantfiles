@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Binary Ninja
+Comment=Binary Ninja
+Exec=$apps_dir/binaryninja/binaryninja
+Icon=$apps_dir/binaryninja/binaryninja.png
+Terminal=false
+StartupNotify=false
