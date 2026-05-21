@@ -1,0 +1,17 @@
+{
+  "outputStyle": "Explanatory",
+  "permissions": {
+    "defaultMode": "plan"
+  },
+  "worktree": {
+    "baseRef": "fresh"
+  },
+  "theme": "dark-daltonized",
+  "verbose": true,
+  "preferredNotifChannel": "auto",
+  "editorMode": "vim",
+  "spinnerVerbs": {
+    "mode": "replace",
+    "verbs": ["Working"]
+  }
+}

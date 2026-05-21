@@ -1,0 +1,357 @@
+#                           H Dub (hdub-tech) 2026
+#        Distributed under the Boost Software License, Version 1.0.
+# See accompanying file LICENSE or copy at https://www.boost.org/LICENSE_1_0.txt
+#                 My Claude dev environment - Version 1.0
+#
+# The following is constructed from the following sources:
+#   * https://podman.io/docs/installation#building-from-source
+#   * https://go.dev/doc/install
+#   * https://github.com/containers/podman/blob/main/CONTRIBUTING.md
+#   * https://github.com/containers/podman-compose#generate-binary-using-dockerpodman-locally
+# ####################################################################### #
+#                         UPDATE THIS BLOCK BELOW                         #
+# ####################################################################### #
+# Claude Code CLI version to install.
+# Pinned to a release ≥1 week old to avoid supply-chain compromises not yet detected.
+# SHA256 is fetched at install time from:
+#   https://downloads.claude.ai/claude-code-releases/$version/manifest.json
+#   -> .platforms["linux-x64"].checksum
+# Note: bootstrap.sh (https://downloads.claude.ai/claude-code-releases/bootstrap.sh)
+# ignores version arguments and always installs latest, so we bypass it entirely.
+# To update: run the upgrade-dependencies skill.
+$claude_version = "2.1.141"
+
+# Get basename of current directory to be project name, or edit to hardcode.
+# This will be the hostname and part of the VM name.
+#$project_name = File.basename(__dir__)
+$project_name = "claude-#{$claude_version}"
+
+# The template to use for the $HOME/.claude/CLAUDE.md file.
+# If CLAUDE.md.overrides exists alongside this Vagrantfile, it wins;
+# otherwise CLAUDE.md.defaults is used. The host path is resolved relative to
+# this Vagrantfile.
+$claude_md_source = File.exist?('CLAUDE.md.overrides') ? 'CLAUDE.md.overrides' : 'CLAUDE.md.defaults'
+
+# The folder on your system to share at /vagrant in the VM
+$local_shared_dir = "../"
+# Use this for worktree
+#$local_shared_dir = "../../../"
+$vm_mountpoint = "/vagrant"
+
+# Space separated list of system packages needed for this project.
+# NOTE: Deliberately left off go in favor of a binary installation
+$podman_packages = "btrfs-progs \
+  gcc \
+  git \
+  iptables \
+  libassuan-dev \
+  libbtrfs-dev \
+  libc6-dev \
+  libdevmapper-dev \
+  libglib2.0-dev \
+  libgpgme-dev \
+  libgpg-error-dev \
+  libprotobuf-dev \
+  libprotobuf-c-dev \
+  libseccomp-dev \
+  libselinux1-dev \
+  libsystemd-dev \
+  make \
+  netavark \
+  passt \
+  pkg-config \
+  runc \
+  uidmap"
+$python_packages = " curl \
+  git \
+  gcc \
+  make \
+  zlib1g-dev \
+  libssl-dev \
+  libffi-dev \
+  libsqlite3-dev \
+  libbz2-dev \
+  libreadline-dev \
+  liblzma-dev"
+$must_have_packages =" aspell \
+  bc \
+  curl \
+  gh \
+  jq \
+  less \
+  openssl \
+  parallel \
+  procyon-decompiler \
+  shellcheck \
+  tree \
+  vim \
+  debianutils \
+  qemu-utils"
+$apt_packages = $podman_packages + $python_packages + $must_have_packages
+
+# Set the desired Python version here
+$python_version = "3.14"
+# Ex) py312, like a tox target. If not using basic versions, you may want to edit this
+$python_version_abbrev = "py#{$python_version.split('.').first(2).join('')}"
+
+# The directory to run git clone from
+$git_repos_dir = "/home/vagrant"
+$git_repos = [
+  "https://github.com/containers/conmon",
+  "https://github.com/containers/podman",
+  "https://github.com/containers/podman-compose"
+]
+
+# Uncomment below to use the version tested.
+# If commented out, latest RELEASED version will be installed (not latest commit)
+#$podman_version = "4.9.3"
+#$podman_compose_version = "1.5.0"
+
+# Podman and Podman Compose setup script
+$podmans_setup_script = <<~PODMAN_SCRIPT
+  set -e                           # Exit on error
+
+  INSTALL_PODMAN_VERSION=
+  cd "#{$git_repos_dir}/podman"
+  if [ -n "#{$podman_version}" ]; then
+    INSTALL_PODMAN_VERSION="v#{$podman_version}"
+  else
+    # Get most recent non pre-release version
+    INSTALL_PODMAN_VERSION="$( git --no-pager tag | grep -v ".*-.*" | sort --version-sort | tail -n1 )"
+  fi
+  echo "\n========= Checking out podman version (${INSTALL_PODMAN_VERSION}) ========="
+  git checkout "${INSTALL_PODMAN_VERSION}"
+
+  GO_VERSION="$( grep "^go" "#{$git_repos_dir}"/podman/go.mod | cut -d' ' -f2 )"
+  echo "\n========= Installing go version (${GO_VERSION}) and updating vagrant user PATH ========="
+  GO_URL="https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
+  GO_ZIP="/tmp/$( basename ${GO_URL} )"
+  GOROOT=/usr/local/go
+  wget --no-verbose --output-document="${GO_ZIP}" "${GO_URL}"
+  [ -e "${GOROOT}" ] && sudo rm -r "${GOROOT}"
+  sudo tar -C "$( dirname ${GOROOT} )" -xzf "${GO_ZIP}"
+  #sudo ln -s "${GOROOT}"/bin/go /usr/local/bin/go  # adds go to sudo secure_path
+
+  CUSTOMRC=/home/vagrant/.customrc
+  echo "\n========= Setup ${CUSTOMRC} exports, etc. ========="
+  cat <<-CUSTOMRC_DOC | tee "${CUSTOMRC}"  # Deliberate no -a
+	export GOROOT=${GOROOT}
+	export PATH=\\$GOROOT/bin:\\$PATH
+	alias markdownlint-cli2='podman run --rm -v .:/workdir docker.io/davidanson/markdownlint-cli2:v0.22.1'
+	alias dockerlint='podman run --rm -i docker.io/hadolint/hadolint:v2.14.0'
+	alias hadolint=dockerlint
+	# Always start in the project/mounted dir at login
+	cd #{$vm_mountpoint}
+  CUSTOMRC_DOC
+  echo ". ${CUSTOMRC}" >> /home/vagrant/.bashrc
+  . "${CUSTOMRC}"
+
+  echo "\n========= Setup conmon ========="
+  cd #{$git_repos_dir}/conmon
+  export GOCACHE="$( mktemp -d )"
+  make
+  sudo make podman
+
+  echo "\n========= Add configurations to /etc/containers ========="
+  sudo mkdir -p /etc/containers
+  sudo curl -L -o /etc/containers/registries.conf https://raw.githubusercontent.com/containers/image/main/registries.conf
+  sudo curl -L -o /etc/containers/policy.json https://raw.githubusercontent.com/containers/image/main/default-policy.json
+
+  LOCALE="en_US.UTF-8"
+  echo "\n========= Reconfigure Locale (${LOCALE}) so 'make docs' will work ========="
+  sudo sed -i -e "s/# \\(${LOCALE} UTF-8\\)/\\1/" /etc/locale.gen  # uncomment US locale
+  echo "LANG=\"${LOCALE}\"" | sudo tee /etc/default/locale
+  sudo locale-gen
+
+  echo "\n========= Build podman from source ========="
+  cd "#{$git_repos_dir}/podman"
+  make BUILDTAGS="seccomp"
+  sudo env PATH=$PATH make install
+  podman --version
+
+  echo "\n========= Update AppArmor to workaround containers/podman#24642 error on first run ========="
+  sudo sed -i 's!/usr/bin/podman!/usr/{bin,local/bin}/podman!' /etc/apparmor.d/podman
+  sudo systemctl reload apparmor.service
+
+  INSTALL_PODMAN_COMPOSE_VERSION=
+  cd "#{$git_repos_dir}/podman-compose"
+  if [ -n "#{$podman_compose_version}" ]; then
+    INSTALL_PODMAN_COMPOSE_VERSION="v#{$podman_compose_version}"
+  else
+    # Get most recent non pre-release version
+    INSTALL_PODMAN_COMPOSE_VERSION="$( git --no-pager tag | grep -v ".*-.*" | sort --version-sort | tail -n1 )"
+  fi
+  echo "\n========= Checking out podman-compose version (${INSTALL_PODMAN_COMPOSE_VERSION}) ========="
+  git checkout "${INSTALL_PODMAN_COMPOSE_VERSION}"
+  #### TEMP HACK UNTIL I SUBMIT FIX TO PODMAN COMPOSE ####
+  REG_CONF_D_DIR=/etc/containers/registries.conf.d
+  if [ ! -a "${REG_CONF_D_DIR}/shortnames.conf" ]; then
+    sudo mkdir -p "${REG_CONF_D_DIR}"
+    echo "[aliases]\n  # python\n  \\"python\\" = \\"docker.io/library/python\\"\n" | sudo tee "${REG_CONF_D_DIR}/shortnames.conf"
+  fi
+  #### END HACK ####
+  sh "#{$git_repos_dir}"/podman-compose/scripts/generate_binary_using_dockerfile.sh
+  sudo cp "#{$git_repos_dir}"/podman-compose/podman-compose /usr/local/bin/podman-compose
+  #sudo apt --yes install podman-compose
+  podman compose version
+
+  echo "\n========= PROJECT SETUP SCRIPT COMPLETE =========\n"
+PODMAN_SCRIPT
+
+# Project dependencies setup script
+$project_setup_script = <<~PROJECT_SCRIPT
+  # PUT YOUR COMMANDS HERE TO INSTALL PROJECT DEPENDENCIES AND SET YOUR NICITIES.
+  echo "\n========= Install Claude Code v#{$claude_version} with SHA256 verification ========="
+  CLAUDE_VERSION="#{$claude_version}"
+  CLAUDE_BASE_URL="https://downloads.claude.ai/claude-code-releases/${CLAUDE_VERSION}"
+  CLAUDE_TMP_BINARY="/tmp/claude-${CLAUDE_VERSION}"
+  CLAUDE_SHA256="$( curl -fsSL "${CLAUDE_BASE_URL}/manifest.json" | jq -r '.platforms["linux-x64"].checksum' )"
+  curl -fsSL "${CLAUDE_BASE_URL}/linux-x64/claude" -o "${CLAUDE_TMP_BINARY}"
+  echo "${CLAUDE_SHA256}  ${CLAUDE_TMP_BINARY}" | sha256sum -c || {
+    echo "ERROR: SHA256 checksum verification failed for Claude Code binary" >&2
+    rm -f "${CLAUDE_TMP_BINARY}"
+    exit 1
+  }
+  chmod +x "${CLAUDE_TMP_BINARY}"
+  "${CLAUDE_TMP_BINARY}" install "${CLAUDE_VERSION}"
+  rm -f "${CLAUDE_TMP_BINARY}"
+  claude --version
+
+  CUSTOMRC=/home/vagrant/.customrc
+  echo "\n========= Setup ${CUSTOMRC} for Claude ========="
+  cat <<-CUSTOMRC_DOC | tee -a "${CUSTOMRC}"
+	
+	#### Claude settings ####
+	export CUSTOM_CLAUDE_FLAGS="IS_DEMO=1 DO_NOT_TRACK=1 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 CLAUDE_CODE_DISABLE_MOUSE_CLICKS=1"
+	alias claude="\\${CUSTOM_CLAUDE_FLAGS} claude"
+	echo "NOTE: claude aliased with the following flags (run 'unalias claude' to reset): \\${CUSTOM_CLAUDE_FLAGS}"
+  CUSTOMRC_DOC
+  . "${CUSTOMRC}"
+
+  USER_CLAUDE_MD="${HOME}/.claude/CLAUDE.md"
+  if [ ! -e "${USER_CLAUDE_MD}" ]; then
+    echo "\n========= Install opinionated user-level CLAUDE.md (source: #{$claude_md_source}) ========="
+    mkdir -p "${HOME}/.claude"
+    # Note: This currently will not pick up changes in worktrees, unless the
+    # worktree is the local_shared_dir
+    cp "#{$vm_mountpoint}/claude/#{$claude_md_source}" "${USER_CLAUDE_MD}"
+  else
+    echo "\n========= User-level CLAUDE.md already exists, skipping opinionated version ========="
+  fi
+
+  # Use the opinionated $PROJECT_DIR/.claude/settings.example.json if a
+  # settings.local.json does not already exist.
+  CLAUDE_EXAMPLE_SETTINGS="#{$vm_mountpoint}/.claude/settings.example.json"
+  CLAUDE_LOCAL_SETTINGS="${CLAUDE_EXAMPLE_SETTINGS/example/local}"
+  if [ ! -e "${CLAUDE_LOCAL_SETTINGS}" ]; then
+    echo "\n========= Install opinionated project-level settings.local.json (source: ${CLAUDE_EXAMPLE_SETTINGS}) ========="
+    cp "${CLAUDE_EXAMPLE_SETTINGS}" "${CLAUDE_LOCAL_SETTINGS}"
+  else
+    echo "\n========= Project-level settings.local.json exists, skipping opinionated version ========="
+  fi
+PROJECT_SCRIPT
+
+Vagrant.configure("2") do |config|
+
+  # Name the VM after the project and Vagrant instance type
+  config.vm.define "#{$project_name}-bento-ubuntu-2404" do |dbw|
+    # Ubuntu 24.04 image by Chef (bento boxes)
+    dbw.vm.box = "bento/ubuntu-24.04"
+    # Dots might not behave as expected here
+    dbw.vm.hostname = "#{$project_name.gsub('.', '-')}"
+    dbw.vm.synced_folder $local_shared_dir, $vm_mountpoint
+    dbw.vm.disk :disk, size: "20GB", primary: true
+
+    # Forwarded ports
+    #config.vm.network "forwarded_port", guest: 3001, host: 63001
+
+    # VirtualBox configuration
+    dbw.vm.provider "virtualbox" do |v|
+      # UI name in VirtualBox
+      v.name = "#{$project_name}-bento-ubuntu-2404"
+      # Increase Video memory from low default of 33MB
+      v.customize ["modifyvm", :id, "--vram", "128"]
+      # Hungry hungry hippo
+      v.memory = 16384
+      v.cpus = 4
+      # Disable Remote Display server ffs Debian
+      v.customize ["modifyvm", :id, "--vrde=off"]
+    end
+
+    # Install requested apt packages
+    dbw.vm.provision "Install specified apt packages [#{$apt_packages}]", type: "shell", inline: <<~APT_SCRIPT
+      # Non-interactive flags
+      export DEBIAN_FRONTEND=noninteractive
+      # https://debian-handbook.info/browse/stable/sect.package-meta-information.html#sidebar.questions-conffiles
+      # Use default confs or old confs
+      apt_dpkg_opts="-o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\""
+
+      # Run apt
+      apt-get update
+      apt-get --yes $apt_dpkg_opts upgrade
+      apt-get --yes install #{$apt_packages}
+    APT_SCRIPT
+
+    # Clone specified git repos, if specified
+    if $git_repos.length > 0
+      dbw.vm.provision "Cloning specified git_repos to #{$git_repos_dir}", type: "shell", privileged: false, inline: <<~GIT_REPOS_SCRIPT
+        set -e
+        cd #{$git_repos_dir}
+        for url in `echo #{$git_repos.join(' ')}`; do
+          project_dir=${url##http*/}
+          echo "INFO: Cloning $url to #{$git_repos_dir}/$project_dir..."
+          if [ ! -d $project_dir ]; then
+            git clone $url
+          else
+            echo "WARNING: $project_dir already exists - skipping" 1>&2
+          fi
+        done
+      GIT_REPOS_SCRIPT
+    end
+
+    # Install and setup pyenv
+    dbw.vm.provision "Install and setup pyenv", type: "shell", privileged: false, inline: <<~'PYENV_SETUP_SCRIPT'
+      set -e
+      # Install pyenv if not already there
+      if [ ! -e ~/.pyenv ]; then
+        # Split up due to noisy unnecessary stderr on both commands
+        curl --silent --output /tmp/pyenv.run https://pyenv.run
+        bash /tmp/pyenv.run 2>&1
+      else
+        echo "WARNING: ~/.pyenv exists - Skipping pyenv installation" 1>&2
+      fi
+      # The BASH Heredocs must use tabs: https://www.shellcheck.net/wiki/SC1040
+      echo "INFO: Creating ~/.pyenrc to be sourced in ~/.bashrc with contents:"
+      cat <<-'PYRC' | tee ~/.pyenvrc  # Deliberate no -a
+		export PYENV_ROOT="$HOME/.pyenv"
+		[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+		eval "$(pyenv init - bash)"
+      PYRC
+      echo "INFO: Adding 'source (.) .pyenvrc' to bashrc, only if not already there"
+      if ! grep pyenvrc ~/.bashrc; then echo ". ~/.pyenvrc" | tee -a ~/.bashrc; fi
+    PYENV_SETUP_SCRIPT
+
+    # Install specified Python version using pyenv and set as global
+    dbw.vm.provision "Install Python #{$python_version} and set as global default", type: "shell", privileged: false, inline: <<~PYENV_INSTALL_SCRIPT
+      set -e
+      source ~/.pyenvrc
+      pyenv install --skip-existing #{$python_version} 2>&1
+      pyenv global #{$python_version}
+      pyenv version
+    PYENV_INSTALL_SCRIPT
+
+    # Run podman and podman compose setup script
+    dbw.vm.provision "Run podman and podman compose setup script", type: "shell", privileged: false, inline: <<~PODMANS_SETUP_SCRIPT
+      #{$podmans_setup_script}
+      echo "INFO: Copying this script to #{$vm_mountpoint}/vagrant-podmans-setup.sh in case it needs to be run again, excluding this comment/cmd"
+      sed -e '1i#!/usr/bin/env bash' /tmp/vagrant-shell | head -n -2 > #{$vm_mountpoint}/vagrant-podmans-setup.sh  # delib no append
+    PODMANS_SETUP_SCRIPT
+
+    # Run project specific setup script
+    dbw.vm.provision "Run project setup script", type: "shell", privileged: false, inline: <<~PROJECT_SETUP_SCRIPT
+      #{$project_setup_script}
+      echo "INFO: Copying this script to #{$vm_mountpoint}/vagrant-project-setup.sh in case it needs to be run again, excluding this comment/cmd"
+      sed -e '1i#!/usr/bin/env bash' /tmp/vagrant-shell | head -n -2 > #{$vm_mountpoint}/vagrant-project-setup.sh  # delib no append
+    PROJECT_SETUP_SCRIPT
+  end
+end
