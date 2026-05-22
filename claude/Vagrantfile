@@ -136,7 +136,7 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
   sudo tar -C "$( dirname ${GOROOT} )" -xzf "${GO_ZIP}"
   #sudo ln -s "${GOROOT}"/bin/go /usr/local/bin/go  # adds go to sudo secure_path
 
-  CUSTOMRC=/home/vagrant/.customrc
+  CUSTOMRC="${HOME}/.customrc"
   echo "\n========= Setup ${CUSTOMRC} exports, etc. ========="
   cat <<-CUSTOMRC_DOC | tee "${CUSTOMRC}"  # Deliberate no -a
 	export GOROOT=${GOROOT}
@@ -147,7 +147,7 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
 	# Always start in the project/mounted dir at login
 	cd #{$vm_mountpoint}
   CUSTOMRC_DOC
-  echo ". ${CUSTOMRC}" >> /home/vagrant/.bashrc
+  if ! grep "${CUSTOMRC}" ~/.bashrc; then echo ". ${CUSTOMRC}" | tee -a ~/.bashrc; fi
   . "${CUSTOMRC}"
 
   echo "\n========= Setup conmon ========="
@@ -158,8 +158,8 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
 
   echo "\n========= Add configurations to /etc/containers ========="
   sudo mkdir -p /etc/containers
-  sudo curl -L -o /etc/containers/registries.conf https://raw.githubusercontent.com/containers/image/main/registries.conf
-  sudo curl -L -o /etc/containers/policy.json https://raw.githubusercontent.com/containers/image/main/default-policy.json
+  sudo curl --location --no-clobber --output /etc/containers/registries.conf https://raw.githubusercontent.com/containers/image/main/registries.conf
+  sudo curl --location --no-clobber --output /etc/containers/policy.json https://raw.githubusercontent.com/containers/image/main/default-policy.json
 
   LOCALE="en_US.UTF-8"
   echo "\n========= Reconfigure Locale (${LOCALE}) so 'make docs' will work ========="
@@ -167,15 +167,19 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
   echo "LANG=\"${LOCALE}\"" | sudo tee /etc/default/locale
   sudo locale-gen
 
-  echo "\n========= Build podman from source ========="
-  cd "#{$git_repos_dir}/podman"
-  make BUILDTAGS="seccomp"
-  sudo env PATH=$PATH make install
-  podman --version
+  echo "\n========= Build podman from source, if not present at ${INSTALL_PODMAN_VERSION}  ========="
+  if ! which podman &>/dev/null || [[ "v$(podman --version | cut -d' ' -f3)" != "${INSTALL_PODMAN_VERSION}" ]]; then
+    cd "#{$git_repos_dir}/podman"
+    make BUILDTAGS="seccomp"
+    sudo env PATH=$PATH make install
 
-  echo "\n========= Update AppArmor to workaround containers/podman#24642 error on first run ========="
-  sudo sed -i 's!/usr/bin/podman!/usr/{bin,local/bin}/podman!' /etc/apparmor.d/podman
-  sudo systemctl reload apparmor.service
+    echo "\n========= Update AppArmor to workaround containers/podman#24642 error on first run ========="
+    sudo sed -i 's!/usr/bin/podman!/usr/{bin,local/bin}/podman!' /etc/apparmor.d/podman
+    sudo systemctl reload apparmor.service
+  else
+    echo "...Podman already installed at ${INSTALL_PODMAN_VERSION}."
+  fi
+  podman --version
 
   INSTALL_PODMAN_COMPOSE_VERSION=
   cd "#{$git_repos_dir}/podman-compose"
@@ -185,21 +189,25 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
     # Get most recent non pre-release version
     INSTALL_PODMAN_COMPOSE_VERSION="$( git --no-pager tag | grep -v ".*-.*" | sort --version-sort | tail -n1 )"
   fi
-  echo "\n========= Checking out podman-compose version (${INSTALL_PODMAN_COMPOSE_VERSION}) ========="
-  git checkout "${INSTALL_PODMAN_COMPOSE_VERSION}"
-  #### TEMP HACK UNTIL I SUBMIT FIX TO PODMAN COMPOSE ####
-  REG_CONF_D_DIR=/etc/containers/registries.conf.d
-  if [ ! -a "${REG_CONF_D_DIR}/shortnames.conf" ]; then
-    sudo mkdir -p "${REG_CONF_D_DIR}"
-    echo "[aliases]\n  # python\n  \\"python\\" = \\"docker.io/library/python\\"\n" | sudo tee "${REG_CONF_D_DIR}/shortnames.conf"
-  fi
-  #### END HACK ####
-  sh "#{$git_repos_dir}"/podman-compose/scripts/generate_binary_using_dockerfile.sh
-  sudo cp "#{$git_repos_dir}"/podman-compose/podman-compose /usr/local/bin/podman-compose
-  #sudo apt --yes install podman-compose
-  podman compose version
 
-  echo "\n========= PROJECT SETUP SCRIPT COMPLETE =========\n"
+  if ! which podman-compose &>/dev/null || [[ "v$( podman-compose --version 2>/dev/null | tail -n1 | cut -d' ' -f3)" != "${INSTALL_PODMAN_COMPOSE_VERSION}" ]]; then
+    echo "\n========= Checking out podman-compose version (${INSTALL_PODMAN_COMPOSE_VERSION}) ========="
+    git checkout "${INSTALL_PODMAN_COMPOSE_VERSION}"
+    #### TEMP HACK UNTIL I SUBMIT FIX TO PODMAN COMPOSE ####
+    REG_CONF_D_DIR=/etc/containers/registries.conf.d
+    if [ ! -a "${REG_CONF_D_DIR}/shortnames.conf" ]; then
+      sudo mkdir -p "${REG_CONF_D_DIR}"
+      echo "[aliases]\n  # python\n  \\"python\\" = \\"docker.io/library/python\\"\n" | sudo tee "${REG_CONF_D_DIR}/shortnames.conf"
+    fi
+    #### END HACK ####
+    sh "#{$git_repos_dir}"/podman-compose/scripts/generate_binary_using_dockerfile.sh
+    sudo cp "#{$git_repos_dir}"/podman-compose/podman-compose /usr/local/bin/podman-compose
+  else
+    echo "\n...Podman Compose already installed at ${INSTALL_PODMAN_COMPOSE_VERSION}."
+  fi
+  podman-compose version
+
+  echo "\n========= PODMAN SETUP SCRIPT COMPLETE =========\n"
 PODMAN_SCRIPT
 
 # Project dependencies setup script
