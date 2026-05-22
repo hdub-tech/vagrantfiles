@@ -262,15 +262,15 @@ $project_setup_script = <<~PROJECT_SCRIPT
     echo "\n========= User-level CLAUDE.md already exists or opinionated one does not, skipping opinionated version ========="
   fi
 
-  # Use the opinionated $PROJECT_DIR/.claude/settings.example.json if a
-  # settings.local.json does not already exist.
-  CLAUDE_EXAMPLE_SETTINGS="#{$vm_mountpoint}/.claude/settings.example.json"
-  CLAUDE_LOCAL_SETTINGS="${CLAUDE_EXAMPLE_SETTINGS/example/local}"
+  # Use the opinionated $PROJECT_DIR/claude/settings.example.json if a
+  # ~/.claude/settings.json does not already exist.
+  CLAUDE_EXAMPLE_SETTINGS="#{$vm_mountpoint}/claude/settings.example.json"
+  CLAUDE_LOCAL_SETTINGS="${HOME}/.claude/settings.json"
   if [ ! -e "${CLAUDE_LOCAL_SETTINGS}" ] && [ -e "${CLAUDE_EXAMPLE_SETTINGS}" ]; then
-    echo "\n========= Install opinionated project-level settings.local.json (source: ${CLAUDE_EXAMPLE_SETTINGS}) ========="
+    echo "\n========= Install opinionated user-level ${CLAUDE_LOCAL_SETTINGS} (source: ${CLAUDE_EXAMPLE_SETTINGS}) ========="
     cp "${CLAUDE_EXAMPLE_SETTINGS}" "${CLAUDE_LOCAL_SETTINGS}"
   else
-    echo "\n========= Project-level settings.local.json exists or example file does not, skipping opinionated version ========="
+    echo "\n========= User-level ${CLAUDE_LOCAL_SETTINGS} exists or example file does not, skipping opinionated version ========="
   fi
 PROJECT_SCRIPT
 
