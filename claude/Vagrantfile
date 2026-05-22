@@ -76,23 +76,27 @@ $python_packages = " curl \
 $must_have_packages =" aspell \
   bc \
   curl \
+  debianutils \
   gh \
   jq \
   less \
   openssl \
   parallel \
   procyon-decompiler \
+  qemu-utils \
   shellcheck \
   tree \
-  vim \
-  debianutils \
-  qemu-utils"
+  unzip \
+  vim"
 $apt_packages = $podman_packages + $python_packages + $must_have_packages
 
 # Set the desired Python version here
 $python_version = "3.14"
 # Ex) py312, like a tox target. If not using basic versions, you may want to edit this
 $python_version_abbrev = "py#{$python_version.split('.').first(2).join('')}"
+$pip_packages = [
+  "uv"
+]
 
 # The directory to run git clone from
 $git_repos_dir = "/home/vagrant"
@@ -227,6 +231,10 @@ $project_setup_script = <<~PROJECT_SCRIPT
 	echo "NOTE: claude aliased with the following flags (run 'unalias claude' to reset): \\${CUSTOM_CLAUDE_FLAGS}"
   CUSTOMRC_DOC
   . "${CUSTOMRC}"
+
+  echo "\n========= Install/Upgrade useful pip packages for some Claude related tasks ========="
+  . ~/.pyenvrc
+  pip install --upgrade pip #{$pip_packages.join(' ')}
 
   USER_CLAUDE_MD="${HOME}/.claude/CLAUDE.md"
   if [ ! -e "${USER_CLAUDE_MD}" ]; then
