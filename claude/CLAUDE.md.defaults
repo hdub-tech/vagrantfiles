@@ -7,3 +7,7 @@ worked on by this user.
 
 Do NOT perform any git actions or run any git commands without explicit human
 consent first.
+
+# Skills
+
+If a SKILL.md file is over 500 lines, suggest a way to break it up.
