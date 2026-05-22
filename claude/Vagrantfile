@@ -215,21 +215,27 @@ $project_setup_script = <<~PROJECT_SCRIPT
   # PUT YOUR COMMANDS HERE TO INSTALL PROJECT DEPENDENCIES AND SET YOUR NICITIES.
   echo "\n========= Install Claude Code v#{$claude_version} with SHA256 verification ========="
   CLAUDE_VERSION="#{$claude_version}"
-  CLAUDE_BASE_URL="https://downloads.claude.ai/claude-code-releases/${CLAUDE_VERSION}"
-  CLAUDE_TMP_BINARY="/tmp/claude-${CLAUDE_VERSION}"
-  CLAUDE_SHA256="$( curl -fsSL "${CLAUDE_BASE_URL}/manifest.json" | jq -r '.platforms["linux-x64"].checksum' )"
-  curl -fsSL "${CLAUDE_BASE_URL}/linux-x64/claude" -o "${CLAUDE_TMP_BINARY}"
-  echo "${CLAUDE_SHA256}  ${CLAUDE_TMP_BINARY}" | sha256sum -c || {
-    echo "ERROR: SHA256 checksum verification failed for Claude Code binary" >&2
+
+
+  if ! which claude &>/dev/null || [[ "v$( claude --version | cut -d' ' -f1)" != "v${CLAUDE_VERSION}" ]]; then
+    CLAUDE_BASE_URL="https://downloads.claude.ai/claude-code-releases/${CLAUDE_VERSION}"
+    CLAUDE_TMP_BINARY="/tmp/claude-${CLAUDE_VERSION}"
+    CLAUDE_SHA256="$( curl -fsSL "${CLAUDE_BASE_URL}/manifest.json" | jq -r '.platforms["linux-x64"].checksum' )"
+    curl -fsSL "${CLAUDE_BASE_URL}/linux-x64/claude" -o "${CLAUDE_TMP_BINARY}"
+    echo "${CLAUDE_SHA256}  ${CLAUDE_TMP_BINARY}" | sha256sum -c || {
+      echo "ERROR: SHA256 checksum verification failed for Claude Code binary" >&2
+      rm -f "${CLAUDE_TMP_BINARY}"
+      exit 1
+    }
+    chmod +x "${CLAUDE_TMP_BINARY}"
+    "${CLAUDE_TMP_BINARY}" install "${CLAUDE_VERSION}"
     rm -f "${CLAUDE_TMP_BINARY}"
-    exit 1
-  }
-  chmod +x "${CLAUDE_TMP_BINARY}"
-  "${CLAUDE_TMP_BINARY}" install "${CLAUDE_VERSION}"
-  rm -f "${CLAUDE_TMP_BINARY}"
+  else
+    echo "...Claude already installed at ${CLAUDE_VERSION}."
+  fi
   claude --version
 
-  CUSTOMRC=/home/vagrant/.customrc
+  CUSTOMRC="${HOME}/.customrc"
   echo "\n========= Setup ${CUSTOMRC} for Claude ========="
   cat <<-CUSTOMRC_DOC | tee -a "${CUSTOMRC}"
 	
