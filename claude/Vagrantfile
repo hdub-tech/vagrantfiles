@@ -251,25 +251,26 @@ $project_setup_script = <<~PROJECT_SCRIPT
   pip install --upgrade pip #{$pip_packages.join(' ')}
 
   USER_CLAUDE_MD="${HOME}/.claude/CLAUDE.md"
-  if [ ! -e "${USER_CLAUDE_MD}" ]; then
+  OPINIONATED_CLAUDE_MD="#{$vm_mountpoint}/claude/#{$claude_md_source}"
+  if [ ! -e "${USER_CLAUDE_MD}" ] && [ -e "${OPINIONATED_CLAUDE_MD}" ]; then
     echo "\n========= Install opinionated user-level CLAUDE.md (source: #{$claude_md_source}) ========="
     mkdir -p "${HOME}/.claude"
     # Note: This currently will not pick up changes in worktrees, unless the
     # worktree is the local_shared_dir
-    cp "#{$vm_mountpoint}/claude/#{$claude_md_source}" "${USER_CLAUDE_MD}"
+    cp "${OPINIONATED_CLAUDE_MD}" "${USER_CLAUDE_MD}"
   else
-    echo "\n========= User-level CLAUDE.md already exists, skipping opinionated version ========="
+    echo "\n========= User-level CLAUDE.md already exists or opinionated one does not, skipping opinionated version ========="
   fi
 
   # Use the opinionated $PROJECT_DIR/.claude/settings.example.json if a
   # settings.local.json does not already exist.
   CLAUDE_EXAMPLE_SETTINGS="#{$vm_mountpoint}/.claude/settings.example.json"
   CLAUDE_LOCAL_SETTINGS="${CLAUDE_EXAMPLE_SETTINGS/example/local}"
-  if [ ! -e "${CLAUDE_LOCAL_SETTINGS}" ]; then
+  if [ ! -e "${CLAUDE_LOCAL_SETTINGS}" ] && [ -e "${CLAUDE_EXAMPLE_SETTINGS}" ]; then
     echo "\n========= Install opinionated project-level settings.local.json (source: ${CLAUDE_EXAMPLE_SETTINGS}) ========="
     cp "${CLAUDE_EXAMPLE_SETTINGS}" "${CLAUDE_LOCAL_SETTINGS}"
   else
-    echo "\n========= Project-level settings.local.json exists, skipping opinionated version ========="
+    echo "\n========= Project-level settings.local.json exists or example file does not, skipping opinionated version ========="
   fi
 PROJECT_SCRIPT
 
@@ -356,7 +357,7 @@ Vagrant.configure("2") do |config|
     # Install specified Python version using pyenv and set as global
     dbw.vm.provision "Install Python #{$python_version} and set as global default", type: "shell", privileged: false, inline: <<~PYENV_INSTALL_SCRIPT
       set -e
-      source ~/.pyenvrc
+      . ~/.pyenvrc
       pyenv install --skip-existing #{$python_version} 2>&1
       pyenv global #{$python_version}
       pyenv version
