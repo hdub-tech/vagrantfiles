@@ -22,6 +22,12 @@ respects `.gitignore`) with custom rules in `$project_dir/.markdownlint.yaml`:
 > add `markdownlint-disable` directives to any markdown file, without explicit
 > human confirmation first.
 
+Keep `.markdownlint.yaml` rule headers (`MD001`, `MD013`, etc.) in numerical
+order. Keep keys within each rule block alphabetized.
+
+Before adding a configuration key to `.markdownlint.yaml`, verify it exists
+in the spec URL cited in that rule's comment header.
+
 # Code Style
 
 Whenever a value is used more than once, extract it into a named variable.
@@ -42,6 +48,17 @@ directly.
 Wrap all markdown prose at 80 characters per line (hard wrap). Code blocks and
 tables are exempt. For list items that exceed 80 characters, break the line and
 indent the continuation by 2 spaces so it aligns with the list text.
+
+All markdown files that reference anchors, relative files or external URLs
+must collect those links in a `<!-- Links -->` section at the very end of
+the file. Within that section, group links in the order below with no
+blank lines between groups, and alphabetize within each group. Do not add
+header labels between groups.
+
+1. Anchored in-file links (destination starts with `#`)
+2. Relative file links (destination starts with `./` or `../`; always
+   use the explicit `./` or `../` prefix)
+3. Public URLs (destination starts with `https://`)
 
 # Architecture
 
