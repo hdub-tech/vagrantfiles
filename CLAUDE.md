@@ -101,6 +101,11 @@ otherwise. Plans are not complete until verification steps have been run —
 
 - Always write verification steps as checkboxes (`[ ]`) so they are harder to skip.
 - Always explicitly announce "Now running verification steps" before executing them.
+- Whenever a Vagrantfile is modified on a branch, the version number should be
+  increased by 1. If it has already been increased once on this branch, it does
+  not need to be done again.
+- If a Vagrantfile was modified, the Changelog section of the corresponding
+  README should be updated to include all the changes in the recent version.
 - Check off each step (`[x]`) as it passes.
 - Do not declare a task done until all verification checkboxes are checked.
 - Any update to the plan resets all verification checkboxes to unchecked
