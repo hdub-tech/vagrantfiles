@@ -1,22 +1,19 @@
 # Claude Vagrantfile
 
-* [Description](#description)
-* [Variables](#variables)
-* [Per-user opinionated defaults](#per-user-opinionated-defaults)
-* [Changelog](#changelog)
+* [Description]
+* [Variables]
+* [Per-user opinionated defaults]
+* [Changelog]
 
 ---
 ## Description
 
-This [Vagrantfile](Vagrantfile) is based on the
-[bento/ubuntu-24.04](https://app.vagrantup.com/bento/boxes/ubuntu-24.04) box.
-It performs the actions listed below, in that order, as the user specified
-in parenthesis (where relevant). Refer to [Variables](#variables) for more
-info on the `$variables`.
+This [Vagrantfile] is based on the [bento/ubuntu-24.04] box. It performs
+the actions listed below, in that order, as the user specified in
+parenthesis (where relevant). Refer to [Variables] for more info on the
+`$variables`.
 
-  1. Pull down the
-     [bento/ubuntu-24.04](https://app.vagrantup.com/bento/boxes/ubuntu-24.04)
-     Vagrant box.
+  1. Pull down the [bento/ubuntu-24.04] Vagrant box.
   2. Set hostname to `$project_name` (dots replaced with dashes).
   3. Sync `$local_shared_dir` to `$vm_mountpoint`.
   4. Create VM named `$project_name-bento-ubuntu-2404` in VirtualBox with
@@ -31,15 +28,13 @@ info on the `$variables`.
   7. (vagrant) If `~/.pyenv` does not exist, install pyenv via the hated
      pipe-to-bash method. Write the pyenv init config to `~/.pyenvrc` and
      source that file from `~/.bashrc`.
-  8. (vagrant) Install `$python_version` using
-     [`pyenv`](https://github.com/pyenv/pyenv/blob/master/COMMANDS.md#pyenv-install)
-     and set it as the global Python version.
+  8. (vagrant) Install `$python_version` using [`pyenv`] and set it as
+     the global Python version.
   9. (vagrant) Run `$podmans_setup_script`: check out `$podman_version`
      (or the latest non-pre-release tag), install the Go version named in
      `podman/go.mod`, build conmon, write `/etc/containers/registries.conf`
      and `policy.json`, regenerate the `en_US.UTF-8` locale, build podman
-     from source, patch AppArmor to work around
-     [containers/podman#24642](https://github.com/containers/podman/issues/24642),
+     from source, patch AppArmor to work around [containers/podman#24642],
      check out `$podman_compose_version` (or latest), and build
      podman-compose. The rendered script is mirrored to
      `$vm_mountpoint/vagrant-podmans-setup.sh` so it can be re-run by hand.
@@ -47,19 +42,18 @@ info on the `$variables`.
      `$claude_version` over HTTPS, verify its SHA256 against the official
      release manifest, run `claude install`, and append the
      `CUSTOM_CLAUDE_FLAGS` exports and `claude` alias to `~/.customrc`.
-     Seed the [opinionated defaults](#per-user-opinionated-defaults) if the
-     corresponding target files do not already exist. The rendered script
-     is mirrored to `$vm_mountpoint/vagrant-project-setup.sh`.
+     Seed the [opinionated defaults] if the corresponding target files do
+     not already exist. The rendered script is mirrored to
+     `$vm_mountpoint/vagrant-project-setup.sh`.
 
 ---
 ## Variables
 
-This chart is the list of variables in the top of the Vagrantfile which you
-are encouraged to update based on your needs. To keep it
-[DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself), rather than
-document default values here, please just see the corresponding
-[Vagrantfile](Vagrantfile#L22-L202). Updating Variables listed as "computed" is
-not recommended.
+This chart is the list of variables in the top of the Vagrantfile which
+you are encouraged to update based on your needs. To keep it [DRY],
+rather than document default values here, please just see the
+corresponding [Vagrantfile][Vagrantfile-vars]. Updating Variables listed
+as "computed" is not recommended.
 
 | Variable | Type | Description |
 | --- | --- | --- |
@@ -72,7 +66,7 @@ not recommended.
 | `python_packages` | String (space separated)<sup>[1](#1)</sup> | apt packages needed by pyenv to build Python from source. |
 | `must_have_packages` | String (space separated)<sup>[1](#1)</sup> | apt packages the author considers essential on every VM. |
 | `apt_packages` | String (computed) | Concatenation of `$podman_packages`, `$python_packages`, and `$must_have_packages`. |
-| `python_version` | String | Any [pyenv supported version](https://github.com/pyenv/pyenv/tree/master/plugins/python-build/share/python-build) of Python, including the unlisted `major` or `major.minor` versions, like `3` or `3.12`. |
+| `python_version` | String | Any [pyenv supported version] of Python, including the unlisted `major` or `major.minor` versions, like `3` or `3.12`. |
 | `python_version_abbrev` | String | A tox-style target abbreviation derived from `$python_version` (e.g., `py314` for `3.14`). If you use something like `miniconda`, the auto-derived name might be mangled; in that case, manually hardcode it. |
 | `git_repos_dir` | String | Directory inside the VM that `$git_repos` are cloned into. Defaults to `/home/vagrant`. |
 | `git_repos` | Array of String | List of `https` git URLs to clone into `$git_repos_dir`. Existing target directories are skipped (not pulled). |
@@ -110,3 +104,18 @@ re-provision.
 ## Changelog
 
 * 1.0 - Initial Release
+
+<!-- markdownlint-disable MD013 -->
+<!-- Links -->
+[Changelog]:                     #changelog
+[Description]:                   #description
+[opinionated defaults]:          #per-user-opinionated-defaults
+[Per-user opinionated defaults]: #per-user-opinionated-defaults
+[Variables]:                     #variables
+[Vagrantfile]:                   ./Vagrantfile
+[Vagrantfile-vars]:              ./Vagrantfile#L22-L202
+[bento/ubuntu-24.04]:            https://app.vagrantup.com/bento/boxes/ubuntu-24.04
+[containers/podman#24642]:       https://github.com/containers/podman/issues/24642
+[DRY]:                           https://en.wikipedia.org/wiki/Don%27t_repeat_yourself
+[`pyenv`]:                       https://github.com/pyenv/pyenv/blob/master/COMMANDS.md#pyenv-install
+[pyenv supported version]:       https://github.com/pyenv/pyenv/tree/master/plugins/python-build/share/python-build
