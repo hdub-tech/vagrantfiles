@@ -41,7 +41,9 @@ language contexts), explain the reason in a comment.
 Do not preface statements with phrases that assert truthfulness — "honest",
 "honestly", "to be honest", "frankly", "to be frank", "truly", "genuinely",
 and similar. They add no information; honesty is the default. Say the thing
-directly.
+directly. Also avoid constructions that frame a specific section as requiring
+special candor ('warrants honest analysis', 'to be clear', 'in fairness') as
+these carry the same implication.
 
 # Markdown Style
 
