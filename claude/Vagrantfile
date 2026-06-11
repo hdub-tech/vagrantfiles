@@ -34,8 +34,6 @@ $claude_md_source = File.exist?('CLAUDE.md.overrides') ? 'CLAUDE.md.overrides' :
 
 # The folder on your system to share at /vagrant in the VM
 $local_shared_dir = "../"
-# Use this for worktree
-#$local_shared_dir = "../../../"
 $vm_mountpoint = "/vagrant"
 
 # Space separated list of system packages needed for this project.
@@ -213,9 +211,9 @@ PODMAN_SCRIPT
 # Project dependencies setup script
 $project_setup_script = <<~PROJECT_SCRIPT
   # PUT YOUR COMMANDS HERE TO INSTALL PROJECT DEPENDENCIES AND SET YOUR NICITIES.
-  echo "\n========= Install Claude Code v#{$claude_version} with SHA256 verification ========="
-  CLAUDE_VERSION="#{$claude_version}"
 
+  CLAUDE_VERSION="#{$claude_version}"
+  echo "\n========= Install Claude Code v${CLAUDE_VERSION} with SHA256 verification, if not already present ========="
 
   if ! which claude &>/dev/null || [[ "v$( claude --version | cut -d' ' -f1)" != "v${CLAUDE_VERSION}" ]]; then
     CLAUDE_BASE_URL="https://downloads.claude.ai/claude-code-releases/${CLAUDE_VERSION}"
