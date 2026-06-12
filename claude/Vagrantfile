@@ -107,13 +107,19 @@ $git_repos_dir = "/home/vagrant"
 $git_repos = [
   "https://github.com/containers/conmon",
   "https://github.com/containers/podman",
-  "https://github.com/containers/podman-compose"
+  "https://github.com/containers/podman-compose",
+  "https://github.com/nvm-sh/nvm"
 ]
 
 # Uncomment below to use the version tested.
 # If commented out, latest RELEASED version will be installed (not latest commit)
 #$podman_version = "4.9.3"
 #$podman_compose_version = "1.5.0"
+
+# NVM and Node versions
+# If commented out, latest RELEASED version will be installed (not latest commit)
+#$nvm_version = "0.40.5"
+$node_version = "22.12.0"
 
 # Podman and Podman Compose setup script
 $podmans_setup_script = <<~PODMAN_SCRIPT
@@ -213,6 +219,57 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
 
   echo "\n========= PODMAN SETUP SCRIPT COMPLETE =========\n"
 PODMAN_SCRIPT
+
+$nvm_node_setup_script = <<~NVM_NODE_SETUP_SCRIPT
+  set -e                           # Exit on error
+
+  NVM_DIR="#{$git_repos_dir}/nvm"
+  cd "${NVM_DIR}"
+
+  INSTALL_NVM_VERSION=
+  if [ -n "#{$nvm_version}" ]; then
+    INSTALL_NVM_VERSION="v#{$nvm_version}"
+  else
+    # Get most recent non pre-release version
+    INSTALL_NVM_VERSION=`git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
+  fi
+
+  if ! command -v nvm &>/dev/null || [[ "v$(nvm --version)" != "${INSTALL_NVM_VERSION}" ]]; then
+    echo "\n========= Checking out nvm version (${INSTALL_NVM_VERSION}) ========="
+    git checkout "${INSTALL_NVM_VERSION}"
+    
+    CUSTOMRC="${HOME}/.customrc"
+    echo "\n========= Setup ${CUSTOMRC} for NVM ========="
+    # Unquoted var to allow parameter expansion
+    cat <<-CUSTOMRC_HEREDOC | tee -a "${CUSTOMRC}"
+	
+	#### NVM settings ####
+	export NVM_DIR="${NVM_DIR}"
+	[ -s "\\$NVM_DIR/nvm.sh" ] && \. "\\$NVM_DIR/nvm.sh"  # This loads nvm
+	[ -s "\\$NVM_DIR/bash_completion" ] && \. "\\$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+	CUSTOMRC_HEREDOC
+    . "${CUSTOMRC}"
+  else
+    echo "\n...NVM already installed at ${INSTALL_NVM_VERSION}."
+  fi
+  nvm --version
+
+  INSTALL_NODE_VERSION=
+  if [ -n "#{$node_version}" ]; then
+    INSTALL_NODE_VERSION="#{$node_version}"
+    echo "\n========= Installing REQUESTED node version (${INSTALL_NODE_VERSION}) ========="
+  else
+    INSTALL_NODE_VERSION="$(nvm ls-remote --no-colors  | tail -n1 | grep -o \"[0-9.]*\")"
+    echo "\n========= Installing LATEST node version (${INSTALL_NODE_VERSION}) ========="
+  fi
+
+  if ! command -v node &>/dev/null || [[ "$(node --version)" != "v${INSTALL_NODE_VERSION}" ]]; then
+    nvm install --default "${INSTALL_NODE_VERSION}"
+  else
+    echo "\n...Node already installed at ${INSTALL_NODE_VERSION}."
+  fi
+  node --version
+NVM_NODE_SETUP_SCRIPT
 
 # Project dependencies setup script
 $project_setup_script = <<~PROJECT_SCRIPT
@@ -375,6 +432,13 @@ Vagrant.configure("2") do |config|
       echo "INFO: Copying this script to #{$vm_mountpoint}/vagrant-podmans-setup.sh in case it needs to be run again, excluding this comment/cmd"
       sed -e '1i#!/usr/bin/env bash' /tmp/vagrant-shell | head -n -2 > #{$vm_mountpoint}/vagrant-podmans-setup.sh  # delib no append
     PODMANS_SETUP_SCRIPT
+
+    # Run nvm and node setup script
+    dbw.vm.provision "Run nvm and node setup script", type: "shell", privileged: false, inline: <<~NODES_SETUP_SCRIPT
+      #{$nvm_node_setup_script}
+      echo "INFO: Copying this script to #{$vm_mountpoint}/vagrant-nvm-node-setup.sh in case it needs to be run again, excluding this comment/cmd"
+      sed -e '1i#!/usr/bin/env bash' /tmp/vagrant-shell | head -n -2 > #{$vm_mountpoint}/vagrant-nvm-node-setup.sh  # delib no append
+    NODES_SETUP_SCRIPT
 
     # Run project specific setup script
     dbw.vm.provision "Run project setup script", type: "shell", privileged: false, inline: <<~PROJECT_SETUP_SCRIPT
