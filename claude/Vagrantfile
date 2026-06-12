@@ -78,6 +78,7 @@ $must_have_packages =" aspell \
   gh \
   jq \
   less \
+  net-tools \
   openssl \
   parallel \
   procyon-decompiler \
