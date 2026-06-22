@@ -139,7 +139,7 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
   GO_VERSION="$( grep "^go" "#{$git_repos_dir}"/podman/go.mod | cut -d' ' -f2 )"
   echo "\n========= Installing go version (${GO_VERSION}) and updating vagrant user PATH ========="
   GO_URL="https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
-  GO_ZIP="/tmp/$( basename ${GO_URL} )"
+  GO_ZIP="/tmp/$( basename "${GO_URL}" )"
   GOROOT=/usr/local/go
   wget --no-verbose --output-document="${GO_ZIP}" "${GO_URL}"
   [ -e "${GOROOT}" ] && sudo rm -r "${GOROOT}"
@@ -158,11 +158,13 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
 	cd #{$vm_mountpoint}
   CUSTOMRC_DOC
   if ! grep "${CUSTOMRC}" ~/.bashrc; then echo ". ${CUSTOMRC}" | tee -a ~/.bashrc; fi
+  # shellcheck source=/dev/null
   . "${CUSTOMRC}"
 
   echo "\n========= Setup conmon ========="
   cd #{$git_repos_dir}/conmon
-  export GOCACHE="$( mktemp -d )"
+  GOCACHE="$( mktemp -d )"
+  export GOCACHE
   make
   sudo make podman
 
@@ -174,7 +176,7 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
   LOCALE="en_US.UTF-8"
   echo "\n========= Reconfigure Locale (${LOCALE}) so 'make docs' will work ========="
   sudo sed -i -e "s/# \\(${LOCALE} UTF-8\\)/\\1/" /etc/locale.gen  # uncomment US locale
-  echo "LANG=\"${LOCALE}\"" | sudo tee /etc/default/locale
+  echo "LANG=${LOCALE}" | sudo tee /etc/default/locale
   sudo locale-gen
 
   echo "\n========= Build podman from source, if not present at ${INSTALL_PODMAN_VERSION}  ========="
@@ -231,7 +233,7 @@ $nvm_node_setup_script = <<~NVM_NODE_SETUP_SCRIPT
     INSTALL_NVM_VERSION="v#{$nvm_version}"
   else
     # Get most recent non pre-release version
-    INSTALL_NVM_VERSION=`git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
+    INSTALL_NVM_VERSION=$( git describe --abbrev=0 --tags --match "v[0-9]*" "$(git rev-list --tags --max-count=1)")
   fi
 
   if ! command -v nvm &>/dev/null || [[ "v$(nvm --version)" != "${INSTALL_NVM_VERSION}" ]]; then
@@ -248,6 +250,7 @@ $nvm_node_setup_script = <<~NVM_NODE_SETUP_SCRIPT
 	[ -s "\\$NVM_DIR/nvm.sh" ] && \. "\\$NVM_DIR/nvm.sh"  # This loads nvm
 	[ -s "\\$NVM_DIR/bash_completion" ] && \. "\\$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 	CUSTOMRC_HEREDOC
+    # shellcheck source=/dev/null
     . "${CUSTOMRC}"
   else
     echo "\n...NVM already installed at ${INSTALL_NVM_VERSION}."
@@ -255,6 +258,7 @@ $nvm_node_setup_script = <<~NVM_NODE_SETUP_SCRIPT
   nvm --version
 
   INSTALL_NODE_VERSION=
+  # shellcheck disable=SC2157
   if [ -n "#{$node_version}" ]; then
     INSTALL_NODE_VERSION="#{$node_version}"
     echo "\n========= Installing REQUESTED node version (${INSTALL_NODE_VERSION}) ========="
@@ -305,9 +309,11 @@ $project_setup_script = <<~PROJECT_SCRIPT
 	alias claude="\\${CUSTOM_CLAUDE_FLAGS} claude"
 	echo "NOTE: claude aliased with the following flags (run 'unalias claude' to reset): \\${CUSTOM_CLAUDE_FLAGS}"
   CUSTOMRC_DOC
+  # shellcheck source=/dev/null
   . "${CUSTOMRC}"
 
   echo "\n========= Install/Upgrade useful pip packages for some Claude related tasks ========="
+  # shellcheck source=/dev/null
   . ~/.pyenvrc
   pip install --upgrade pip #{$pip_packages.join(' ')}
 
