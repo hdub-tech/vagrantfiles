@@ -38,7 +38,7 @@ $vm_mountpoint = "/vagrant"
 
 # Ports to be forwarded. Format is {guest: 80, host: 8080}
 $forwarded_ports = [
-  {guest: 5173, host: 65173}
+#  {guest: 80, host: 8080}
 ]
 
 # Space separated list of system packages needed for this project.
