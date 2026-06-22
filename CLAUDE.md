@@ -132,6 +132,39 @@ otherwise. Plans are not complete until verification steps have been run —
 - When announcing a plan change, remind the human that it will reset the
   Verification steps unless they choose otherwise.
 
+# Commit Messages
+
+Commit messages should follow the following guidelines:
+
+```ebnf
+<commit-message> ::= <type> "(" <scope> ")" ":" " " <short-summary>
+            [ <CRLF> <body> ]
+            [ <CRLF> <important-footer> ]
+            [ <CRLF> <issue-footer> ]
+
+<type> ::= "build" | "ci" | "docs" | "feat" | "fix" | "perf" | "refactor" | "revert" | "style" | "test"
+<scope> ::= "claude-vm" | "hashicorp-vagrant-vm" | "kali-vm" | "podman-vm" | "python-vm" | "claude-ai" | "commitlint" | "common" | "markdownlint" | "shellcheck"
+<body> ::= [ 1*80<character> [ <CRLF> <body> ] ]
+<important-footer> ::= <important-token> ":" " " <short-summary>
+            [ <CRLF> <body> ]
+<short-summary> ::= 1*80( lowercase-line )
+<important-token> ::= "BREAKING CHANGE" | "DEPRECATED"
+<issue-footer> ::= <issue-token> " " "#" 1*( digit )
+<issue-token> ::= "Closes" | "Fixes" | "Resolves"
+<lowercase-line> ::= <any lower case letter and comma and colon>
+<character> ::= <any ASCII character except CR, LF, or null>
+<CRLF> ::= <carriage return> <line feed>
+<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+```
+
+TL:DR: `type(scope): short-summary` at a min, with:
+
+- `type` **AND** `scope` **AND** `short-summary` are **REQUIRED**
+- `body` is **OPTIONAL**
+- `important-footer` is **REQUIRED IF** there is a breaking change or something
+  is deprecated and then **MUST** include migration or update recommendations
+- `issue-footer` is **REQUIRED IF** there is an accompanying ticket
+
 # Testing / PR Requirements
 
 - Test `vagrant up` with defaults and again with a populated `overrides.yml`
