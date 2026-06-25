@@ -60,3 +60,19 @@ Project specific VMs are meant to correspond to Github projects which don't alre
 
 | Project | Vagrantfile | Version | Template |
 | --- | --- | --- | --- |
+
+## Contributing
+
+I can't imagine anyone would be interested in this, but I'm in the process of
+adding some linting pre-commit hooks, and would ask that **new** changes pass.
+To have them automatically run, execute:
+
+```
+# from anywhere in the project
+git config core.hooksPath "$( git rev-parse --git-dir )"/.githooks
+```
+
+> [!IMPORTANT]
+> The commitlint hook requires either `podman` or `npx` (Node) to be available.
+> Dealer's choice. If you have `docker`, you should be able to just
+> `alias podman=docker` and it *should* work. (lmk ha).
