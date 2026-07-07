@@ -108,6 +108,7 @@ $git_repos = [
   "https://github.com/containers/conmon",
   "https://github.com/containers/podman",
   "https://github.com/containers/podman-compose",
+  "https://github.com/nektos/act",
   "https://github.com/nvm-sh/nvm"
 ]
 
@@ -121,7 +122,12 @@ $git_repos = [
 #$nvm_version = "0.40.5"
 $node_version = "22.12.0"
 
+# ACT version
+# If commented out, latest RELEASED version will be installed
+#$act_version = "0.2.89"
+
 # Podman and Podman Compose setup script
+$podman_socket = "/run/user/1000/podman/podman.sock"
 $podmans_setup_script = <<~PODMAN_SCRIPT
   set -e                           # Exit on error
 
@@ -149,6 +155,7 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
   CUSTOMRC="${HOME}/.customrc"
   echo "\n========= Setup ${CUSTOMRC} exports, etc. ========="
   cat <<-CUSTOMRC_DOC | tee "${CUSTOMRC}"  # Deliberate no -a
+	export DOCKER_HOST=unix://#{$podman_socket}
 	export GOROOT=${GOROOT}
 	export PATH=\\$GOROOT/bin:\\$PATH
 	alias markdownlint-cli2='podman run --rm -v .:/workdir docker.io/davidanson/markdownlint-cli2:v0.22.1'
@@ -221,6 +228,14 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
   fi
   podman-compose version
 
+  echo "\n========= Enable and Start podman.socket service =========\n"
+  systemctl --user enable podman.socket
+  systemctl --user start podman.socket
+
+  DOCKER_SOCK=/var/run/docker.sock
+  echo "\n========= Symlink to ${DOCKER_SOCK}, if doesn't exist =========\n"
+  [[ ! -e "${DOCKER_SOCK}" ]] && sudo ln -s "#{$podman_socket}" "${DOCKER_SOCK}"
+
   echo "\n========= PODMAN SETUP SCRIPT COMPLETE =========\n"
 PODMAN_SCRIPT
 
@@ -241,7 +256,7 @@ $nvm_node_setup_script = <<~NVM_NODE_SETUP_SCRIPT
   if ! command -v nvm &>/dev/null || [[ "v$(nvm --version)" != "${INSTALL_NVM_VERSION}" ]]; then
     echo "\n========= Checking out nvm version (${INSTALL_NVM_VERSION}) ========="
     git checkout "${INSTALL_NVM_VERSION}"
-    
+
     CUSTOMRC="${HOME}/.customrc"
     echo "\n========= Setup ${CUSTOMRC} for NVM ========="
     # Unquoted var to allow parameter expansion
@@ -276,6 +291,56 @@ $nvm_node_setup_script = <<~NVM_NODE_SETUP_SCRIPT
   fi
   node --version
 NVM_NODE_SETUP_SCRIPT
+
+$act_setup_script = <<~ACT_SETUP_SCRIPT
+  set -e                           # Exit on error
+
+  # shellcheck source=/dev/null
+  . "${HOME}/.customrc"  # Needed for Go building
+
+  ACT_DIR="#{$git_repos_dir}/act"
+  cd "${ACT_DIR}"
+
+  INSTALL_ACT_VERSION=
+  # shellcheckdisable=SC2157
+  if [ -n "#{$act_version}" ]; then
+    INSTALL_ACT_VERSION="#{$act_version}"
+    echo "\n========= Installing REQUESTED act version (${INSTALL_ACT_VERSION}) ========="
+  else
+    INSTALL_ACT_VERSION="$( git --no-pager tag | grep -v ".*-.*" | sort --version-sort | tail -n1 )"
+    echo "\n========= Installing LATEST act version (${INSTALL_ACT_VERSION}) ========="
+  fi
+
+  echo "\n========= Apply wd-hopkins patch for local workflow testing, if not already applied ========="
+  WD_HOPKINS_REMOTE=wd-hopkins-act-fork
+  if ! git remote | grep "${WD_HOPKINS_REMOTE}"; then
+    git remote add -f -t fix-nested-remote-workflows "${WD_HOPKINS_REMOTE}" https://github.com/wd-hopkins/act
+  fi
+
+  CHERRY_PICK=25a7cadfb4a4339a9c8c4c2d65be4474e45a3ddf
+  if ! git log | grep "${CHERRY_PICK}"; then
+    git cherry-pick -x "${CHERRY_PICK}"
+  fi
+
+  echo "\n========= Build and install act to /usr/local/bin ========="
+  make build
+  sudo cp "${ACT_DIR}"/dist/local/act /usr/local/bin/
+
+  act --version
+
+  # go run gotest.tools/gotestsum@latest --junitfile unit-tests.xml --format pkgname -- -v -cover -coverpkg=./... -coverprofile=coverage.txt -covermode=atomic -timeout 20m ./...
+  # make test update ^^
+
+  ACTRC="${HOME}/.config/act/actrc"
+  cat <<-ACTRC_DOC | tee "${ACTRC}"  # Deliberate no -a
+	--container-daemon-socket unix://#{$podman_socket}
+	--platform ubuntu-latest=node:trixie
+	--platform ubuntu-24.04=node:trixie
+	--platform ubuntu-22.04=node:bookworm
+	--platform ubuntu-20.04=node:bullseye
+	--platform ubuntu-18.04=node:buster
+  ACTRC_DOC
+ACT_SETUP_SCRIPT
 
 # Project dependencies setup script
 $project_setup_script = <<~PROJECT_SCRIPT
@@ -447,6 +512,13 @@ Vagrant.configure("2") do |config|
       echo "INFO: Copying this script to #{$vm_mountpoint}/vagrant-nvm-node-setup.sh in case it needs to be run again, excluding this comment/cmd"
       sed -e '1i#!/usr/bin/env bash' /tmp/vagrant-shell | head -n -2 > #{$vm_mountpoint}/vagrant-nvm-node-setup.sh  # delib no append
     NODES_SETUP_SCRIPT
+
+    # Run act setup script
+    dbw.vm.provision "Run nektos/act setup script", type: "shell", privileged: false, inline: <<~ACT_SETUP_SCRIPT
+      #{$act_setup_script}
+      echo "INFO: Copying this script to #{$vm_mountpoint}/vagrant-act-setup.sh in case it needs to be run again, excluding this comment/cmd"
+      sed -e '1i#!/usr/bin/env bash' /tmp/vagrant-shell | head -n -2 > #{$vm_mountpoint}/vagrant-act-setup.sh  # delib no append
+    ACT_SETUP_SCRIPT
 
     # Run project specific setup script
     dbw.vm.provision "Run project setup script", type: "shell", privileged: false, inline: <<~PROJECT_SETUP_SCRIPT
