@@ -365,7 +365,6 @@ $project_setup_script = <<~PROJECT_SCRIPT
   else
     echo "...Claude already installed at ${CLAUDE_VERSION}."
   fi
-  claude --version
 
   CUSTOMRC="${HOME}/.customrc"
   echo "\n========= Setup ${CUSTOMRC} for Claude ========="
@@ -378,6 +377,8 @@ $project_setup_script = <<~PROJECT_SCRIPT
   CUSTOMRC_DOC
   # shellcheck source=/dev/null
   . "${CUSTOMRC}"
+  export PATH="$HOME/.local/bin:$PATH"
+  claude --version
 
   echo "\n========= Install/Upgrade useful pip packages for some Claude related tasks ========="
   # shellcheck source=/dev/null
