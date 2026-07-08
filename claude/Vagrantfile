@@ -16,9 +16,10 @@
 # SHA256 is fetched at install time from:
 #   https://downloads.claude.ai/claude-code-releases/$version/manifest.json
 #   -> .platforms["linux-x64"].checksum
-# Note: bootstrap.sh (https://downloads.claude.ai/claude-code-releases/bootstrap.sh)
-# ignores version arguments and always installs latest, so we bypass it entirely.
-# To update: run the upgrade-dependencies skill.
+# Note: bootstrap.sh (https://downloads.claude.ai/claude-code-releases/bootstrap.sh),
+# which is the documented way to install Claude Code, doesn't support checksum
+# validation of itself, which is why we bypass it and go directly to the
+# versioned installer file.
 $claude_version = "2.1.141"
 
 # Get basename of current directory to be project name, or edit to hardcode.
