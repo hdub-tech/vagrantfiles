@@ -294,6 +294,10 @@ $nvm_node_setup_script = <<~NVM_NODE_SETUP_SCRIPT
     echo "\n...Node already installed at ${INSTALL_NODE_VERSION}."
   fi
   node --version
+
+  echo "\n========= Installing Bun ========="
+  npm install -g bun
+  bun --version
 NVM_NODE_SETUP_SCRIPT
 
 $act_setup_script = <<~ACT_SETUP_SCRIPT
