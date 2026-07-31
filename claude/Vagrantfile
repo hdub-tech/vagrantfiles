@@ -101,7 +101,8 @@ $python_version = "3.14"
 # Ex) py312, like a tox target. If not using basic versions, you may want to edit this
 $python_version_abbrev = "py#{$python_version.split('.').first(2).join('')}"
 $pip_packages = [
-  "uv"
+  "uv",
+  "zizmor"
 ]
 
 # The directory to run git clone from
