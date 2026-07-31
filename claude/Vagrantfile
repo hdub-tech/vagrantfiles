@@ -86,6 +86,7 @@ $must_have_packages =" aspell \
   less \
   net-tools \
   openssl \
+  pandoc \
   parallel \
   procyon-decompiler \
   qemu-utils \
