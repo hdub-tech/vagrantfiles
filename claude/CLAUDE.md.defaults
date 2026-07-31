@@ -11,7 +11,6 @@ consent first.
 
 If a SKILL.md file is over 500 lines, suggest a way to break it up.
 
-
 # Linting
 
 Run from `$project_dir`:
@@ -76,6 +75,47 @@ Two Vagrant VM templates, each in its own subdirectory:
 | --- | --- | --- |
 | `kali/` | kalilinux/rolling | `$project_dir/kali/defaults.yml` + optional `kali/overrides.yml` |
 | `python/` | debian/bookworm64 | Variables block at top of `$project_dir/python/Vagrantfile` |
+
+# Response Modes
+
+Certain user phrasings trigger a fixed response shape. When triggered, do
+NOT write a plan, create tasks, launch subagents, or take file/system
+actions — just produce the shape below.
+
+## Trigger: "propose a fix"
+
+Close variants: "suggest a fix", "how would you fix this", "what's the
+fix", "how should this be fixed".
+
+Respond with exactly these four parts, in order, and stop:
+
+1. **Insight** — one or two sentences naming what is actually wrong.
+2. **Source** — `file:line` references (or command output, doc URL, etc.)
+   showing where the insight comes from.
+3. **Proposed fix** — a fenced ` ```diff ` block for small changes;
+   concise prose only if the diff would exceed 25 lines. Do NOT write
+   the fix to disk.
+4. **Why this fix** — one or two sentences on why this beats the obvious
+   alternative(s).
+
+Do not append "should I apply this?" or similar — the user will ask when
+ready.
+
+## Trigger: "postulate why X"
+
+Close variants: "why do you think X", "what's causing X", "any theories
+on X", "speculate about X".
+
+Respond with exactly these two parts, then stop and ask ONE question:
+
+1. **Insight** — the hypothesis, explicitly framed as a hypothesis.
+2. **Source** — `file:line` references or observations grounding the
+   hypothesis.
+
+Then ask, verbatim: **"Want me to propose a fix?"**
+
+Do NOT include a diff, fix, or remediation in the initial response, even
+if the fix seems obvious.
 
 # Verification Steps
 
