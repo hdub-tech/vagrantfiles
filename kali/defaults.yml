@@ -61,7 +61,7 @@ pipx_projects:
 apps_dir: /opt
 # ...and the urls to use for it
 compressed_app_urls:
-  - { url: 'https://cdn.binary.ninja/installers/binaryninja_free_linux.zip', algorithm: sha256, checksum: 92789c0bd3e1f75b1a03d80e74eb7ea8d3a95e19f7915557774a0ad402674926 }  # https://binary.ninja/js/hashes.js
+  - { url: 'https://cdn.binary.ninja/installers/binaryninja_free_linux.zip', algorithm: sha256, checksum: 60aaf7a05d149bb0fbca82d7fce162c6e4170d9e926e90e61162156c23f1c252 }  # https://binary.ninja/js/hashes.js
   - { url: 'https://download.jetbrains.com/idea/idea-2026.1.1.tar.gz', algorithm: sha256, checksum: 7a58d386f2a2e5a8cd7e4591657b4fe599aeac22d960c7accf5f927846507bfb }
   - { url: 'https://web9001.nomachine.com/download/9.5/Linux/nomachine_9.5.7_2_amd64.deb',  algorithm: md5, checksum: 0bfa0b79d4340d864384305eb99e39b8 }
   - { url: 'https://github.com/dandavison/delta/releases/download/0.19.2/git-delta_0.19.2_amd64.deb', algorithm: sha256, checksum: ea4f0222950ee750a3d38dd80d03bce4cee07a3f63928fc47548383bcaf23093 }
