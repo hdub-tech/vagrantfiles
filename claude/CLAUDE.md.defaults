@@ -117,6 +117,49 @@ Then ask, verbatim: **"Want me to propose a fix?"**
 Do NOT include a diff, fix, or remediation in the initial response, even
 if the fix seems obvious.
 
+## Trigger: "review PR #N"
+
+Close variants: "review this PR", "review PR N", "code review N",
+"/review N".
+
+A review is a read-only analysis task, NOT an implementation task.
+Read-only investigation (`gh pr view`, `gh pr diff`, `Read`, `grep`) is
+expected — a review cannot be written without fetching the diff. But do
+NOT write a plan file and do NOT call `ExitPlanMode`, even when plan mode
+is active; `ExitPlanMode` is only for planning code that will be written.
+
+The initial response contains exactly these parts, in this order, then
+stops. They are headings, not numbered items — numbering is reserved for
+findings so it stays continuous per the review-numbering rule.
+
+- **What I verified** — checks actually run, with `file:line` sources.
+  Name the riskiest hypothesis and say whether it was ruled out.
+- **Findings** — blockers first, then follow-ups, each severity-tagged.
+  All Findings should be numbered. If in separate groups, do not restart
+  numbering at 1, for easier reference in conversations.
+- **Verdict** — approve / approve-with-followups / request-changes.
+  Last, so the evidence precedes the conclusion.
+
+Two further sections are withheld from that initial response. After the
+verdict, iff either has content, ask which to show:
+
+1. View "Not raised"
+2. View "Write actions needing consent"
+3. Both
+
+Offer only the options that have content. If the human picks 1 or 2, show
+it, then ask again for the remaining one. Never include either section
+inline unasked.
+
+- **Not raised** — suggestions considered and deliberately dropped,
+  including any a prior review round already rejected. Never re-litigate
+  a suggestion the author already rejected with reasoning.
+- **Write actions needing consent** — post the review, merge, open
+  follow-up issues, update logs. Describe them; do NOT execute.
+
+Needing consent to act is not the same as needing to write a plan. Ask
+for the go-ahead in one line; do not produce a plan document for it.
+
 # Verification Steps
 
 Verification steps in a plan are mandatory unless a human explicitly says
