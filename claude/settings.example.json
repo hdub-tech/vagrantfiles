@@ -1,7 +1,8 @@
 {
   "outputStyle": "Explanatory",
   "permissions": {
-    "defaultMode": "plan"
+    "defaultMode": "plan",
+    "disableBypassPermissionsMode": "disable"
   },
   "worktree": {
     "baseRef": "fresh"
