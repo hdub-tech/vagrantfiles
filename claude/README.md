@@ -56,8 +56,8 @@ parenthesis (where relevant). Refer to [Variables] for more info on the
      release manifest, run `claude install`, and append the
      `CUSTOM_CLAUDE_FLAGS` exports and `claude` alias to `~/.customrc`.
      Then `pip install --upgrade` the `$pip_packages` list. Seed the
-     [opinionated defaults] if the corresponding target files do not
-     already exist. The rendered script is mirrored to
+     [opinionated defaults] if the corresponding target files/directories
+     do not already exist. The rendered script is mirrored to
      `$vm_mountpoint/vagrant-project-setup.sh`.
 
 ---
@@ -74,6 +74,7 @@ as "computed" is not recommended.
 | `claude_version` | String | Pinned Claude Code CLI version to install. The SHA256 is fetched at install time from the official release manifest. Should be ≥ 1 week old to avoid not-yet-detected supply-chain compromises. To update: run the (COMING SOON) `upgrade-dependencies` skill. |
 | `project_name` | String | Used as VM hostname and part of the VM name. Defaults to `claude-$claude_version`. |
 | `claude_md_source` | String (computed) | Selects which user-level `CLAUDE.md` template is seeded into `~/.claude/CLAUDE.md`. Evaluates to `CLAUDE.md.overrides` if that file exists alongside the Vagrantfile, otherwise `CLAUDE.md.defaults`. To customize without modifying the tracked default, copy `CLAUDE.md.defaults` to `CLAUDE.md.overrides` (gitignored) and edit only that file. |
+| `memory_source_dir` | String (computed) | Selects which directory of Claude Code memory files is seeded into `~/.claude/memory/`. Evaluates to `memory.overrides` if that directory exists alongside the Vagrantfile, otherwise `memory.defaults`. To customize without modifying the tracked default, copy `memory.defaults/` to `memory.overrides/` (gitignored) and edit only that directory. To skip using memory files, create an empty `.memory.overrides` directory. |
 | `local_shared_dir` | String | Folder on your host system to share at `$vm_mountpoint` inside the VM. Defaults to `"../"` (the repository root). For git worktree layouts, uncomment the alternative `"../../../"`. |
 | `vm_mountpoint` | String | In-guest path that `$local_shared_dir` is mounted to. Defaults to `/vagrant`. |
 | `forwarded_ports` | Array of Hashes | Each entry is `{guest: N, host: M}` and becomes a VirtualBox port forward. Empty by default. |
@@ -110,16 +111,17 @@ Footnotes:
 ---
 ## Per-user opinionated defaults
 
-Two files are seeded into the VM by `$project_setup_script` on first
-provision only. Each copy is gated by an existence check, so re-running
-`vagrant up --provision` will not clobber files you have already edited.
-To re-seed from the tracked source, delete the target inside the VM and
-re-provision.
+Files and directories are seeded into the VM by `$project_setup_script`
+on first provision only. Each copy is gated by an existence check, so
+re-running `vagrant up --provision` will not clobber files you have
+already edited. To re-seed from the tracked source, delete the target
+inside the VM and re-provision.
 
 | Source (host) | Target (guest) | How to customize |
 | --- | --- | --- |
 | `claude/CLAUDE.md.defaults` (or `claude/CLAUDE.md.overrides` if present) | `~/.claude/CLAUDE.md` | Copy `CLAUDE.md.defaults` to `CLAUDE.md.overrides` on the host and edit only that file. `CLAUDE.md.overrides` is gitignored. |
 | `claude/settings.example.json` | `~/.claude/settings.json` | Edit `~/.claude/settings.json` inside the VM. Not on the synced folder. The Vagrantfile will not overwrite an existing `~/.claude/settings.local.json`. |
+| `claude/memory.defaults/` (or `claude/memory.overrides/` if present) | `~/.claude/memory/` (per-file, non-destructive) | Copy `memory.defaults/` to `memory.overrides/` alongside the Vagrantfile and edit only that directory. Individual files already present at the destination are never overwritten. `memory.overrides/` is gitignored. To skip using memory files, create an empty `.memory.overrides` directory. |
 
 ---
 ## Changelog
@@ -134,7 +136,7 @@ re-provision.
 [Per-user opinionated defaults]: #per-user-opinionated-defaults
 [Variables]:                     #variables
 [Vagrantfile]:                   ./Vagrantfile
-[Vagrantfile-vars]:              ./Vagrantfile#L22-L127
+[Vagrantfile-vars]:              ./Vagrantfile#L18-L140
 [bento/ubuntu-24.04]:            https://app.vagrantup.com/bento/boxes/ubuntu-24.04
 [containers/podman#24642]:       https://github.com/containers/podman/issues/24642
 [DRY]:                           https://en.wikipedia.org/wiki/Don%27t_repeat_yourself

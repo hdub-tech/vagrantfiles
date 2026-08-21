@@ -11,15 +11,10 @@
 # ####################################################################### #
 #                         UPDATE THIS BLOCK BELOW                         #
 # ####################################################################### #
-# Claude Code CLI version to install.
-# Pinned to a release ≥1 week old to avoid supply-chain compromises not yet detected.
-# SHA256 is fetched at install time from:
+# Claude Code CLI version to install. Pinned to a release ≥1 week old to avoid
+# supply-chain compromises not yet detected. SHA256 is fetched at install time from:
 #   https://downloads.claude.ai/claude-code-releases/$version/manifest.json
 #   -> .platforms["linux-x64"].checksum
-# Note: bootstrap.sh (https://downloads.claude.ai/claude-code-releases/bootstrap.sh),
-# which is the documented way to install Claude Code, doesn't support checksum
-# validation of itself, which is why we bypass it and go directly to the
-# versioned installer file.
 $claude_version = "2.1.141"
 
 # Get basename of current directory to be project name, or edit to hardcode.
@@ -32,6 +27,15 @@ $project_name = "claude-#{$claude_version}"
 # otherwise CLAUDE.md.defaults is used. The host path is resolved relative to
 # this Vagrantfile.
 $claude_md_source = File.exist?('CLAUDE.md.overrides') ? 'CLAUDE.md.overrides' : 'CLAUDE.md.defaults'
+
+# The directory of default Claude Code memory files to seed into
+# $HOME/.claude/memory/. If memory.overrides/ exists alongside this
+# Vagrantfile, it wins; otherwise memory.defaults/ is used. The host path is
+# resolved relative to this Vagrantfile.
+$memory_source_dir = File.directory?('memory.overrides') ? 'memory.overrides' : 'memory.defaults'
+
+# Guest staging directory for claude memories (used as fallback if default not found on VM)
+$memory_staging_dir = "/tmp/claude-memory-staging"
 
 # The folder on your system to share at /vagrant in the VM
 $local_shared_dir = "../"
@@ -352,6 +356,10 @@ $act_setup_script = <<~ACT_SETUP_SCRIPT
 ACT_SETUP_SCRIPT
 
 # Project dependencies setup script
+# Note: bootstrap.sh (https://downloads.claude.ai/claude-code-releases/bootstrap.sh),
+# which is the documented way to install Claude Code, doesn't support checksum
+# validation of itself, which is why we bypass it and go directly to the
+# versioned installer file.
 $project_setup_script = <<~PROJECT_SCRIPT
   # PUT YOUR COMMANDS HERE TO INSTALL PROJECT DEPENDENCIES AND SET YOUR NICITIES.
 
@@ -415,6 +423,38 @@ $project_setup_script = <<~PROJECT_SCRIPT
     cp "${CLAUDE_EXAMPLE_SETTINGS}" "${CLAUDE_LOCAL_SETTINGS}"
   else
     echo "\n========= User-level ${CLAUDE_LOCAL_SETTINGS} exists or example file does not, skipping opinionated version ========="
+  fi
+
+  # Seed claude memory files - prefer vmmountpoint source, fall back to staged
+  MEMORY_SOURCE_DIR="#{$vm_mountpoint}/claude/#{$memory_source_dir}"
+  MEMORY_STAGING_DIR="#{$memory_staging_dir}"
+  MEMORY_DEST_DIR="${HOME}/.claude/memory"
+  mkdir -p "${MEMORY_DEST_DIR}"
+
+  if [ -d "${MEMORY_SOURCE_DIR}" ]; then
+    echo "\n========= Seed Claude Code memory from ${MEMORY_SOURCE_DIR} ========="
+    seed_from="${MEMORY_SOURCE_DIR}"
+  elif [ -d "${MEMORY_STAGING_DIR}" ]; then
+    echo "\n========= Seed Claude Code memory from staged fallback ${MEMORY_STAGING_DIR} ========="
+    seed_from="${MEMORY_STAGING_DIR}"
+  else
+    seed_from=""
+  fi
+
+  if [ -n "${seed_from}" ]; then
+    for memory_file in "${seed_from}"/*.md; do
+      [ -f "${memory_file}" ] || continue
+      dest="${MEMORY_DEST_DIR}/$( basename "${memory_file}" )"
+      if [ ! -e "${dest}" ]; then
+        cp "${memory_file}" "${dest}"
+        echo "...Seeded $( basename "${memory_file}" )"
+      else
+        echo "...Skipped $( basename "${memory_file}" ) (already exists)"
+      fi
+    done
+    rm -rf "${MEMORY_STAGING_DIR}"
+  else
+    echo "\n========= No claude memory sources found to seed ========="
   fi
 PROJECT_SCRIPT
 
@@ -529,6 +569,15 @@ Vagrant.configure("2") do |config|
       echo "INFO: Copying this script to #{$vm_mountpoint}/vagrant-act-setup.sh in case it needs to be run again, excluding this comment/cmd"
       sed -e '1i#!/usr/bin/env bash' /tmp/vagrant-shell | head -n -2 > #{$vm_mountpoint}/vagrant-act-setup.sh  # delib no append
     ACT_SETUP_SCRIPT
+
+    # Stage claude memory source into $memory_staging_dir as fallback for the
+    # bash block in $project_setup_script (only if source dir exists)
+    if File.directory?($memory_source_dir)
+      dbw.vm.provision "Stage memory #{$memory_source_dir} from Vagrantfile dir",
+        type: "file",
+        source: "#{$memory_source_dir}/",
+        destination: $memory_staging_dir
+    end
 
     # Run project specific setup script
     dbw.vm.provision "Run project setup script", type: "shell", privileged: false, inline: <<~PROJECT_SETUP_SCRIPT
