@@ -117,13 +117,15 @@ $git_repos = [
   "https://github.com/containers/podman",
   "https://github.com/containers/podman-compose",
   "https://github.com/nektos/act",
-  "https://github.com/nvm-sh/nvm"
+  "https://github.com/nvm-sh/nvm",
+  "https://passt.top/passt"
 ]
 
 # Uncomment below to use the version tested.
 # If commented out, latest RELEASED version will be installed (not latest commit)
-#$podman_version = "4.9.3"
-#$podman_compose_version = "1.5.0"
+#$pasta_version = "2026_07_28.f8df3f1"
+#$podman_version = "6.1.0"
+#$podman_compose_version = "1.6.0"
 
 # NVM and Node versions
 # If commented out, latest RELEASED version will be installed (not latest commit)
@@ -210,6 +212,25 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
     echo "...Podman already installed at ${INSTALL_PODMAN_VERSION}."
   fi
   podman --version
+
+  echo "\n========= Build pasta from source because OS version is too old ========="
+  INSTALL_PASTA_VERSION=
+  PASTA_DIR="#{$git_repos_dir}/passt"
+  cd "${PASTA_DIR}"
+  if [ -n "#{$pasta_version}" ]; then
+    INSTALL_PASTA_VERSION="#{$pasta_version}"
+  else
+    # Get most recent versoin
+    INSTALL_PASTA_VERSION="$( git --no-pager tag | sort | tail -n1 )"
+  fi
+  echo "\n========= Checking out passt version (${INSTALL_PASTA_VERSION}) ========="
+  git checkout "${INSTALL_PASTA_VERSION}"
+
+  echo "\n========= Build and install pasta to /usr/local/bin ========="
+  make
+  sudo ln -s "${PASTA_DIR}"/pasta /usr/local/bin/pasta
+  which pasta
+  pasta --version
 
   INSTALL_PODMAN_COMPOSE_VERSION=
   cd "#{$git_repos_dir}/podman-compose"

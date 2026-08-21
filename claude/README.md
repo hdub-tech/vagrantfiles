@@ -36,9 +36,10 @@ parenthesis (where relevant). Refer to [Variables] for more info on the
      `podman/go.mod`, build conmon, write `/etc/containers/registries.conf`
      and `policy.json`, regenerate the `en_US.UTF-8` locale, build podman
      from source, patch AppArmor to work around [containers/podman#24642],
-     check out `$podman_compose_version` (or latest), and build
-     podman-compose. The rendered script is mirrored to
-     `$vm_mountpoint/vagrant-podmans-setup.sh` so it can be re-run by hand.
+     checkout out `$pasta_version` (or latest) and build, check out
+     `$podman_compose_version` (or latest), and build podman-compose. The
+     rendered script is mirrored to `$vm_mountpoint/vagrant-podmans-setup.sh` so
+     it can be re-run by hand.
   10. (vagrant) Run `$nvm_node_setup_script`: check out `$nvm_version`
      (or the latest non-pre-release tag) of nvm, source `NVM_DIR` from
      `~/.customrc`, then `nvm install --default $node_version`. The
@@ -89,6 +90,7 @@ as "computed" is not recommended.
 | `git_repos` | Array of String | List of `https` git URLs to clone into `$git_repos_dir`. Existing target directories are skipped (not pulled). |
 | `podman_version` | String (optional) | If set, check out this exact tag of podman before building (e.g., `4.9.3`). If unset (the default), the latest non-pre-release tag is used. |
 | `podman_compose_version` | String (optional) | Same as `$podman_version` but for podman-compose. |
+| `pasta_version` | String (optional) | Same as `$podman_version` but for passt/pasta. |
 | `nvm_version` | String (optional) | If set, check out this exact tag of the nvm repo (e.g., `0.40.5`) before loading `nvm.sh`. If unset, the latest non-pre-release tag is used. |
 | `node_version` | String (optional) | If set, `nvm install --default` this version. If unset, the latest release advertised by `nvm ls-remote` is installed. |
 | `act_version` | String (optional) | If set, check out this exact tag of `nektos/act` before building from source (e.g., `0.2.89`). If unset, the latest non-pre-release tag is used. |
