@@ -70,7 +70,7 @@ Two Vagrant VM templates, each in its own subdirectory:
 | --- | --- | --- |
 | `kali/` | kalilinux/rolling | `$project_dir/kali/defaults.yml` + optional `kali/overrides.yml` |
 | `python/` | debian/bookworm64 | Variables block at top of `$project_dir/python/Vagrantfile` |
-| `claude/` | bento/ubuntu-24.04 | Variables block at top of `$project_dir/claude/Vagrantfile` + optional `claude/CLAUDE.md.overrides` |
+| `claude/` | bento/ubuntu-24.04 | Variables block at top of `$project_dir/claude/Vagrantfile` + optional `claude/claude.overrides/` |
 
 ## Key Patterns
 

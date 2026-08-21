@@ -74,8 +74,12 @@ as "computed" is not recommended.
 | --- | --- | --- |
 | `claude_version` | String | Pinned Claude Code CLI version to install. The SHA256 is fetched at install time from the official release manifest. Should be ≥ 1 week old to avoid not-yet-detected supply-chain compromises. To update: run the (COMING SOON) `upgrade-dependencies` skill. |
 | `project_name` | String | Used as VM hostname and part of the VM name. Defaults to `claude-$claude_version`. |
-| `claude_md_source` | String (computed) | Selects which user-level `CLAUDE.md` template is seeded into `~/.claude/CLAUDE.md`. Evaluates to `CLAUDE.md.overrides` if that file exists alongside the Vagrantfile, otherwise `CLAUDE.md.defaults`. To customize without modifying the tracked default, copy `CLAUDE.md.defaults` to `CLAUDE.md.overrides` (gitignored) and edit only that file. |
-| `memory_source_dir` | String (computed) | Selects which directory of Claude Code memory files is seeded into `~/.claude/memory/`. Evaluates to `memory.overrides` if that directory exists alongside the Vagrantfile, otherwise `memory.defaults`. To customize without modifying the tracked default, copy `memory.defaults/` to `memory.overrides/` (gitignored) and edit only that directory. To skip using memory files, create an empty `.memory.overrides` directory. |
+| `claude_defaults_dir` | String | Directory of tracked opinionated defaults seeded into `~/.claude/` (contains `CLAUDE.md`, `settings.json`, `memory/`). Defaults to `claude.defaults`. |
+| `claude_overrides_dir` | String | Sibling directory of optional per-item overrides. Defaults to `claude.overrides`. Gitignored. To customize any artifact, create `claude.overrides/<item>` (matching the tracked-default name — `CLAUDE.md`, `settings.json`, or `memory/`); it takes precedence over its `claude.defaults/` counterpart. Any subset may be overridden independently. |
+| `claude_md_source` | String (computed) | Resolves to `claude.overrides/CLAUDE.md` if present, else `claude.defaults/CLAUDE.md`, else `nil` (skipped). Seeded into `~/.claude/CLAUDE.md`. |
+| `settings_source` | String (computed) | Resolves to `claude.overrides/settings.json` if present, else `claude.defaults/settings.json`, else `nil` (skipped). Seeded into `~/.claude/settings.json`. |
+| `memory_source_dir` | String (computed) | Resolves to `claude.overrides/memory` if present, else `claude.defaults/memory`, else `nil` (skipped). Individual `.md` files are seeded into `~/.claude/memory/` per-file, non-destructively. |
+| `claude_staging_dir` | String | Guest-side staging directory the resolved defaults are copied into by the file provisioner. Defaults to `/tmp/claude-staging`. The project setup script seeds `~/.claude/` from here. |
 | `local_shared_dir` | String | Folder on your host system to share at `$vm_mountpoint` inside the VM. Defaults to `"../"` (the repository root). For git worktree layouts, uncomment the alternative `"../../../"`. |
 | `vm_mountpoint` | String | In-guest path that `$local_shared_dir` is mounted to. Defaults to `/vagrant`. |
 | `forwarded_ports` | Array of Hashes | Each entry is `{guest: N, host: M}` and becomes a VirtualBox port forward. Empty by default. |
@@ -119,11 +123,16 @@ re-running `vagrant up --provision` will not clobber files you have
 already edited. To re-seed from the tracked source, delete the target
 inside the VM and re-provision.
 
+Overrides are resolved per-item: any file or directory present at
+`claude/claude.overrides/<item>` takes precedence over its
+`claude/claude.defaults/<item>` counterpart, and each artifact overrides
+independently. All of `claude/claude.overrides/` is gitignored.
+
 | Source (host) | Target (guest) | How to customize |
 | --- | --- | --- |
-| `claude/CLAUDE.md.defaults` (or `claude/CLAUDE.md.overrides` if present) | `~/.claude/CLAUDE.md` | Copy `CLAUDE.md.defaults` to `CLAUDE.md.overrides` on the host and edit only that file. `CLAUDE.md.overrides` is gitignored. |
-| `claude/settings.example.json` | `~/.claude/settings.json` | Edit `~/.claude/settings.json` inside the VM. Not on the synced folder. The Vagrantfile will not overwrite an existing `~/.claude/settings.local.json`. |
-| `claude/memory.defaults/` (or `claude/memory.overrides/` if present) | `~/.claude/memory/` (per-file, non-destructive) | Copy `memory.defaults/` to `memory.overrides/` alongside the Vagrantfile and edit only that directory. Individual files already present at the destination are never overwritten. `memory.overrides/` is gitignored. To skip using memory files, create an empty `.memory.overrides` directory. |
+| `claude/claude.defaults/CLAUDE.md` (or `claude/claude.overrides/CLAUDE.md` if present) | `~/.claude/CLAUDE.md` | Copy `claude.defaults/CLAUDE.md` to `claude.overrides/CLAUDE.md` on the host and edit only that file. |
+| `claude/claude.defaults/settings.json` (or `claude/claude.overrides/settings.json` if present) | `~/.claude/settings.json` | Copy `claude.defaults/settings.json` to `claude.overrides/settings.json` on the host and edit only that file. Alternatively edit `~/.claude/settings.json` inside the VM directly. |
+| `claude/claude.defaults/memory/` (or `claude/claude.overrides/memory/` if present) | `~/.claude/memory/` (per-file, non-destructive) | Copy `claude.defaults/memory/` to `claude.overrides/memory/` on the host and edit only that directory. Individual files already present at the destination are never overwritten. To skip seeding memory files, create an empty `claude.overrides/memory/` directory. |
 
 ---
 ## Changelog
@@ -138,7 +147,7 @@ inside the VM and re-provision.
 [Per-user opinionated defaults]: #per-user-opinionated-defaults
 [Variables]:                     #variables
 [Vagrantfile]:                   ./Vagrantfile
-[Vagrantfile-vars]:              ./Vagrantfile#L18-L140
+[Vagrantfile-vars]:              ./Vagrantfile#L18-L92
 [bento/ubuntu-24.04]:            https://app.vagrantup.com/bento/boxes/ubuntu-24.04
 [containers/podman#24642]:       https://github.com/containers/podman/issues/24642
 [DRY]:                           https://en.wikipedia.org/wiki/Don%27t_repeat_yourself

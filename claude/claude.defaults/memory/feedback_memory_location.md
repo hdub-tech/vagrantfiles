@@ -1,6 +1,6 @@
 ---
 name: feedback-memory-location
-description: Auto-memory read priority is project → user (higher wins on collision); user-level writes should also be backed up to the vagrantfiles project's memory.defaults if that project is on disk
+description: Auto-memory read priority is project → user (higher wins on collision); user-level writes should also be backed up to the vagrantfiles project's claude.defaults/memory/ if that project is on disk
 metadata:
   type: feedback
 ---
@@ -37,9 +37,9 @@ back-propagated there to survive VM rebuilds.
     the human so they know to `git add` it.
   - Otherwise write to `~/.claude/memory/` (user scope). **Also**, if
     the vagrantfiles project (the repo that seeded this VM's user-level
-    memory defaults, identifiable by its `claude/memory.defaults/` and
+    memory defaults, identifiable by its `claude/claude.defaults/memory/` and
     `claude/Vagrantfile`) can be located on disk, back up the same
-    memory file into that project's `claude/memory.defaults/` directory
+    memory file into that project's `claude/claude.defaults/memory/` directory
     AND update that project's `MEMORY.md` index — so the memory
     survives VM rebuilds and propagates to future VMs provisioned from
     the same source. Tell the human so they know to `git add` and
