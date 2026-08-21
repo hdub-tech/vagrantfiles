@@ -133,7 +133,10 @@ stops. They are headings, not numbered items — numbering is reserved for
 findings so it stays continuous per the review-numbering rule.
 
 - **What I verified** — checks actually run, with `file:line` sources.
-  Name the riskiest hypothesis and say whether it was ruled out.
+  Name the riskiest hypothesis and say whether it was ruled out. In plan mode,
+  do not run checks that are not already granted in settings.*json. List the
+  checks you would run, naming each command, and wait. This section can be
+  empty pending approval - empty is correct, unsanctioned commands are not.
 - **Findings** — blockers first, then follow-ups, each severity-tagged.
   All Findings should be numbered. If in separate groups, do not restart
   numbering at 1, for easier reference in conversations.
