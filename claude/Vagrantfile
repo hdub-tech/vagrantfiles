@@ -163,8 +163,14 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
 
   echo "\n========= Add configurations to /etc/containers ========="
   sudo mkdir -p /etc/containers
-  sudo curl --location --no-clobber --output /etc/containers/registries.conf https://raw.githubusercontent.com/containers/image/main/registries.conf
-  sudo curl --location --no-clobber --output /etc/containers/policy.json https://raw.githubusercontent.com/containers/image/main/default-policy.json
+  REGISTRY_CONF=/etc/containers/registries.conf
+  POLICY_CONF=/etc/containers/policy.json
+  if [ ! -e "${REGISTRY_CONF}" ]; then
+    sudo curl --location --no-clobber --output "${REGISTRY_CONF}" https://raw.githubusercontent.com/containers/image/main/registries.conf
+  fi
+  if [ ! -e "${POLICY_CONF}" ]; then
+    sudo curl --location --no-clobber --output "${POLICY_CONF}" https://raw.githubusercontent.com/containers/image/main/default-policy.json
+  fi
 
   LOCALE="en_US.UTF-8"
   echo "\n========= Reconfigure Locale (${LOCALE}) so 'make docs' will work ========="
