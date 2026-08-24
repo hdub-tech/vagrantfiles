@@ -147,9 +147,6 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
 	alias markdownlint-cli2='podman run --rm -v .:/workdir docker.io/davidanson/markdownlint-cli2:v0.22.1'
 	alias dockerlint='podman run --rm -i docker.io/hadolint/hadolint:v2.14.0'
 	alias hadolint=dockerlint
-        alias ghauth='gh auth login -h github.com -p ssh'
-	alias buninstall='bun install --verbose'
-	alias bunupdate='bun update --verbose'
 	# Always start in the project/mounted dir at login
 	cd #{$vm_mountpoint}
   CUSTOMRC_DOC
@@ -272,6 +269,9 @@ $nvm_node_setup_script = <<~NVM_NODE_SETUP_SCRIPT
 	export NVM_DIR="${NVM_DIR}"
 	[ -s "\\$NVM_DIR/nvm.sh" ] && \. "\\$NVM_DIR/nvm.sh"  # This loads nvm
 	[ -s "\\$NVM_DIR/bash_completion" ] && \. "\\$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+	alias buninstall='bun install --verbose'
+	alias bunupdate='bun update --verbose'
 	CUSTOMRC_HEREDOC
     # shellcheck source=/dev/null
     . "${CUSTOMRC}"
@@ -410,6 +410,8 @@ $project_setup_script = <<~PROJECT_SCRIPT
 	export CUSTOM_CLAUDE_FLAGS="IS_DEMO=1 DO_NOT_TRACK=1 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 CLAUDE_CODE_DISABLE_MOUSE_CLICKS=1"
 	alias claude="\\${CUSTOM_CLAUDE_FLAGS} claude"
 	echo "NOTE: claude aliased with the following flags (run 'unalias claude' to reset): \\${CUSTOM_CLAUDE_FLAGS}"
+
+	alias ghauth='gh auth login -h github.com -p ssh'
   CUSTOMRC_DOC
   # shellcheck source=/dev/null
   . "${CUSTOMRC}"
