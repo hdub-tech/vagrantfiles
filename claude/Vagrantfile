@@ -71,7 +71,7 @@ $git_repos = [
   "https://passt.top/passt"
 ]
 
-# Uncomment below to use the version tested.
+# Uncomment below to use the version specified.
 # If commented out, latest RELEASED version will be installed (not latest commit)
 #$pasta_version = "2026_07_28.f8df3f1"
 #$podman_version = "6.1.0"

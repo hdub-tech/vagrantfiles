@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. <!-- markdownlint-disable-line MD013 -->
+This file provides guidance to Claude Code (claude.ai/code) when working with this user. <!-- markdownlint-disable-line MD013 -->
 
 # Git
 
@@ -13,10 +13,10 @@ If a SKILL.md file is over 500 lines, suggest a way to break it up.
 
 # Linting
 
-Run from `$project_dir`:
+For git projects containing a `$project_dir/.markdownlint-cli2.yaml` file, run the following from `$project_dir`:
 
 ```bash
-podman run --rm -v .:/workdir docker.io/davidanson/markdownlint-cli2:v0.22.1
+podman run --rm -v .:/workdir docker.io/davidanson/markdownlint-cli2:v0.23.1
 ```
 
 Configured via `$project_dir/.markdownlint-cli2.yaml` (scans `**/*.md*`,
