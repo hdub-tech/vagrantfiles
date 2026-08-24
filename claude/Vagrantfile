@@ -200,8 +200,12 @@ $podmans_setup_script = <<~PODMAN_SCRIPT
   git checkout "${INSTALL_PASTA_VERSION}"
 
   echo "\n========= Build and install pasta to /usr/local/bin ========="
+  PASTA_TARGET=/usr/local/bin/pasta
+  PASTA_BUILD="${PASTA_DIR}"/pasta
   make
-  sudo ln -s "${PASTA_DIR}"/pasta /usr/local/bin/pasta
+  if [[ ! -L "${PASTA_TARGET}" ]] || [[ "$( readlink "${PASTA_TARGET}" )" != "${PASTA_BUILD}" ]]; then
+    sudo ln -f -s "${PASTA_BUILD}" "${PASTA_TARGET}"
+  fi
   which pasta
   pasta --version
 
