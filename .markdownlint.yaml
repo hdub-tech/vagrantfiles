@@ -1,3 +1,10 @@
+# MD013/line-length : Line length : https://github.com/DavidAnson/markdownlint/blob/v0.40.0/doc/md013.md
+MD013:
+  # Include code blocks
+  code_blocks: false
+  # Include tables
+  tables: false
+
 # MD022/blanks-around-headings : Headings should be surrounded by blank lines : https://github.com/DavidAnson/markdownlint/blob/v0.40.0/doc/md022.md
 MD022:
   # Blank lines above heading

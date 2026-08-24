@@ -1,0 +1,179 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with this user. <!-- markdownlint-disable-line MD013 -->
+
+# Git
+
+Do NOT perform any git actions or run any git commands without explicit human
+consent first.
+
+# Skills
+
+If a SKILL.md file is over 500 lines, suggest a way to break it up.
+
+# Linting
+
+For git projects containing a `$project_dir/.markdownlint-cli2.yaml` file, run the following from `$project_dir`:
+
+```bash
+podman run --rm -v .:/workdir docker.io/davidanson/markdownlint-cli2:v0.23.1
+```
+
+Configured via `$project_dir/.markdownlint-cli2.yaml` (scans `**/*.md*`,
+respects `.gitignore`) with custom rules in `$project_dir/.markdownlint.yaml`.
+
+> [!WARNING]
+> Do NOT edit `.markdownlint.yaml` or `.markdownlint-cli2.yaml`, and do NOT
+> add `markdownlint-disable` directives to any markdown file, without explicit
+> human confirmation first.
+
+Keep `.markdownlint.yaml` rule headers (`MD001`, `MD013`, etc.) in numerical
+order. Keep keys within each rule block alphabetized.
+
+Before adding a configuration key to `.markdownlint.yaml`, verify it exists
+in the spec URL cited in that rule's comment header.
+
+# Code Style
+
+Whenever a value is used more than once, extract it into a named variable.
+
+Prefer reusing existing variables over creating new ones with identical content.
+If a new variable must duplicate an existing value (e.g., bridging between two
+language contexts), explain the reason in a comment.
+
+# Communication Style
+
+Do not preface statements with phrases that assert truthfulness — "honest",
+"honestly", "to be honest", "frankly", "to be frank", "truly", "genuinely",
+and similar. They add no information; honesty is the default. Say the thing
+directly. Also avoid constructions that frame a specific section as requiring
+special candor ('warrants honest analysis', 'to be clear', 'in fairness') as
+these carry the same implication.
+
+# Markdown Style
+
+Wrap all markdown prose at 80 characters per line (hard wrap). Code blocks and
+tables are exempt. For list items that exceed 80 characters, break the line and
+indent the continuation by 2 spaces so it aligns with the list text.
+
+All markdown files that reference anchors, relative files or external URLs
+must collect those links in a `<!-- Links -->` section at the very end of
+the file. Within that section, group links in the order below with no
+blank lines between groups, and alphabetize within each group. Do not add
+header labels between groups.
+
+1. Anchored in-file links (destination starts with `#`)
+2. Relative file links (destination starts with `./` or `../`; always
+   use the explicit `./` or `../` prefix)
+3. Public URLs (destination starts with `https://`)
+
+# Architecture
+
+Two Vagrant VM templates, each in its own subdirectory:
+
+| Template | Base Box | Config Location |
+| --- | --- | --- |
+| `kali/` | kalilinux/rolling | `$project_dir/kali/defaults.yml` + optional `kali/overrides.yml` |
+| `python/` | debian/bookworm64 | Variables block at top of `$project_dir/python/Vagrantfile` |
+
+# Response Modes
+
+Certain user phrasings trigger a fixed response shape. When triggered, do
+NOT write a plan, create tasks, launch subagents, or take file/system
+actions — just produce the shape below.
+
+## Trigger: "propose a fix"
+
+Close variants: "suggest a fix", "how would you fix this", "what's the
+fix", "how should this be fixed".
+
+Respond with exactly these four parts, in order, and stop:
+
+1. **Insight** — one or two sentences naming what is actually wrong.
+2. **Source** — `file:line` references (or command output, doc URL, etc.)
+   showing where the insight comes from.
+3. **Proposed fix** — a fenced ` ```diff ` block for small changes;
+   concise prose only if the diff would exceed 25 lines. Do NOT write
+   the fix to disk.
+4. **Why this fix** — one or two sentences on why this beats the obvious
+   alternative(s).
+
+Do not append "should I apply this?" or similar — the user will ask when
+ready.
+
+## Trigger: "postulate why X"
+
+Close variants: "why do you think X", "what's causing X", "any theories
+on X", "speculate about X".
+
+Respond with exactly these two parts, then stop and ask ONE question:
+
+1. **Insight** — the hypothesis, explicitly framed as a hypothesis.
+2. **Source** — `file:line` references or observations grounding the
+   hypothesis.
+
+Then ask, verbatim: **"Want me to propose a fix?"**
+
+Do NOT include a diff, fix, or remediation in the initial response, even
+if the fix seems obvious.
+
+## Trigger: "review PR #N"
+
+Close variants: "review this PR", "review PR N", "code review N",
+"/review N".
+
+A review is a read-only analysis task, NOT an implementation task.
+Read-only investigation (`gh pr view`, `gh pr diff`, `Read`, `grep`) is
+expected — a review cannot be written without fetching the diff. But do
+NOT write a plan file and do NOT call `ExitPlanMode`, even when plan mode
+is active; `ExitPlanMode` is only for planning code that will be written.
+
+The initial response contains exactly these parts, in this order, then
+stops. They are headings, not numbered items — numbering is reserved for
+findings so it stays continuous per the review-numbering rule.
+
+- **What I verified** — checks actually run, with `file:line` sources.
+  Name the riskiest hypothesis and say whether it was ruled out. In plan mode,
+  do not run checks that are not already granted in settings.*json. List the
+  checks you would run, naming each command, and wait. This section can be
+  empty pending approval - empty is correct, unsanctioned commands are not.
+- **Findings** — blockers first, then follow-ups, each severity-tagged.
+  All Findings should be numbered. If in separate groups, do not restart
+  numbering at 1, for easier reference in conversations.
+- **Verdict** — approve / approve-with-followups / request-changes.
+  Last, so the evidence precedes the conclusion.
+
+Two further sections are withheld from that initial response. After the
+verdict, iff either has content, ask which to show:
+
+1. View "Not raised"
+2. View "Write actions needing consent"
+3. Both
+
+Offer only the options that have content. If the human picks 1 or 2, show
+it, then ask again for the remaining one. Never include either section
+inline unasked.
+
+- **Not raised** — suggestions considered and deliberately dropped,
+  including any a prior review round already rejected. Never re-litigate
+  a suggestion the author already rejected with reasoning.
+- **Write actions needing consent** — post the review, merge, open
+  follow-up issues, update logs. Describe them; do NOT execute.
+
+Needing consent to act is not the same as needing to write a plan. Ask
+for the go-ahead in one line; do not produce a plan document for it.
+
+# Verification Steps
+
+Verification steps in a plan are mandatory unless a human explicitly says
+otherwise. Plans are not complete until verification steps have been run —
+"edits look correct" is not the same as plan completion.
+
+- Always write verification steps as checkboxes (`[ ]`) so they are harder to skip.
+- Always explicitly announce "Now running verification steps" before executing them.
+- Check off each step (`[x]`) as it passes.
+- Do not declare a task done until all verification checkboxes are checked.
+- Any update to the plan resets all verification checkboxes to unchecked
+  (`[ ]`), unless a human explicitly says not to.
+- When announcing a plan change, remind the human that it will reset the
+  Verification steps unless they choose otherwise.

@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# Run commitlinter before allowing commit message to persist
+
+LOGGER="[commit-msg hook]:"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+COMMITLINT_CONFIG="commitlint.config.js"
+LINT_RULES="${REPO_ROOT}/${COMMITLINT_CONFIG}"
+
+commitlint() {
+  echo "${LOGGER} Linting '$1' against '${LINT_RULES}'"
+
+  if which npx &>/dev/null ; then # if node based, use npx commitlint
+    npx commitlint --verbose --config "${LINT_RULES}" < "$1"
+  else # else use podman container
+    COMMITLINT_VERSION="21.0.2"
+    podman run -i --rm -v "${REPO_ROOT}":/workdir --entrypoint '' \
+	    docker.io/commitlint/commitlint:$COMMITLINT_VERSION commitlint \
+	    --verbose --config /workdir/${COMMITLINT_CONFIG} < "$1"
+  fi
+}
+
+if [ -e "${LINT_RULES}" ]; then
+  commitlint "$1" || {
+    echo >&2 "${LOGGER} ${LINT_RULES} violation. See output above to debug"
+    exit 1
+  }
+else
+  echo "${LOGGER} Config ${LINT_RULES} doesn't exist... skipping commitlint"
+  exit 0
+fi
