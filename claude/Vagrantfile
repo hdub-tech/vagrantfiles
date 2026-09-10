@@ -39,22 +39,26 @@ $must_have_packages =" aspell \
   gh \
   jq \
   less \
+  libreoffice-impress \
   net-tools \
   openssl \
   pandoc \
   parallel \
+  poppler-utils \
   procyon-decompiler \
   qemu-utils \
   shellcheck \
   tree \
   unzip \
-  vim"
+  vim \
+  yq"
 
 # Set the desired Python version here
 $python_version = "3.14"
 # Ex) py312, like a tox target. If not using basic versions, you may want to edit this
 $python_version_abbrev = "py#{$python_version.split('.').first(2).join('')}"
 $pip_packages = [
+  "odfpy",
   "pylint",
   "uv",
   "zizmor"
