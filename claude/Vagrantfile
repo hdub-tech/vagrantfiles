@@ -15,7 +15,7 @@
 # supply-chain compromises not yet detected. SHA256 is fetched at install time from:
 #   https://downloads.claude.ai/claude-code-releases/$version/manifest.json
 #   -> .platforms["linux-x64"].checksum
-$claude_version = "2.1.234"
+$claude_version = "2.1.267"
 
 # Get basename of current directory to be project name, or edit to hardcode.
 # This will be the hostname and part of the VM name.
