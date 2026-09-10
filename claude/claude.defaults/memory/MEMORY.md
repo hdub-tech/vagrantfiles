@@ -18,3 +18,4 @@
 - [Default to least privilege](feedback_least_privilege.md) — omit broad-privilege settings unless a specific need forces them; start minimal, escalate as a targeted fix
 - [Ansible test DRY](feedback_ansible_test_dry.md) — role-internal constants belong in vars/main.yml; tests load via task helper, never duplicate into fixtures
 - [Review output shape](feedback_review_output_shape.md) — a review is read-only analysis: never a plan file, never `ExitPlanMode`; What I verified → Findings → Verdict, then ask before showing "Not raised" / write actions needing consent
+- [User handles commits](feedback_user_handles_commits.md) — never commit and never ask "shall I commit?"; state "changes made, not committed" and stop
