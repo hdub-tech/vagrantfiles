@@ -11,6 +11,12 @@ consent first.
 
 If a SKILL.md file is over 500 lines, suggest a way to break it up.
 
+# References to the user
+
+Do not refer to the user by first name in plans or in conversational
+responses. Use their GitHub handle (e.g. `hdub-tech`) or "the human"
+instead. If a pronoun is needed, use neutral pronouns (they/them).
+
 # Linting
 
 For git projects containing a `$project_dir/.markdownlint-cli2.yaml` file, run the following from `$project_dir`:
