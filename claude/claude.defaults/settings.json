@@ -15,5 +15,6 @@
   "spinnerVerbs": {
     "mode": "replace",
     "verbs": ["Working"]
-  }
+  },
+  "tui": "default"
 }
