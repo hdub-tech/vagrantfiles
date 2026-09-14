@@ -1,6 +1,6 @@
 # Memory Index
 
-- [Memory location](feedback_memory_location.md) — read priority: project → user; user-level writes also back up to the vagrantfiles project's `claude.defaults/memory/` (if the project can be found on disk) so memories survive VM rebuilds
+- [Memory location](feedback_memory_location.md) — auto-memory is per-project only; `~/.claude/memory/` is a cross-project tier pulled in via `~/.claude/CLAUDE.md`, backed up to the vagrantfiles project's `claude.defaults/memory/` so it survives VM rebuilds
 - [Links section alphabetization](feedback_links_alphabetize.md) — ignore leading dots when sorting `<!-- Links -->` entries
 - [Junior dev upskilling sources](feedback_junior_dev_upskilling_sources.md) — always include an official doc link (MDN/Node/npm/OWASP/etc.) when pitching feedback at junior level
 - [Uncertainty callouts](feedback_uncertainty.md) — name the unsure part explicitly and suggest how to verify; don't hedge the whole answer

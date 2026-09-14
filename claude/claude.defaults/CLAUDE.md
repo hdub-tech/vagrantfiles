@@ -123,3 +123,9 @@ Verification steps in a plan are mandatory unless a human explicitly says otherw
 - Do not declare a task done until all verification checkboxes are checked.
 - Any update to the plan resets all verification checkboxes to unchecked (`[ ]`), unless a human explicitly says not to.
 - When announcing a plan change, remind the human that it will reset the Verification steps unless they choose otherwise.
+
+# Memory
+
+Cross-project memory (preferences and conventions that apply regardless of repo) lives in `~/.claude/memory/`, backed up to the vagrantfiles project's `claude/claude.defaults/memory/` so it survives VM rebuilds. Load its index every session:
+
+@~/.claude/memory/MEMORY.md
