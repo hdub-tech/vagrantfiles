@@ -49,15 +49,6 @@ All markdown files that reference anchors, relative files or external URLs must 
 2. Relative file links (destination starts with `./` or `../`; always use the explicit `./` or `../` prefix)
 3. Public URLs (destination starts with `https://`)
 
-# Architecture
-
-Two Vagrant VM templates, each in its own subdirectory:
-
-| Template | Base Box | Config Location |
-| --- | --- | --- |
-| `kali/` | kalilinux/rolling | `$project_dir/kali/defaults.yml` + optional `kali/overrides.yml` |
-| `python/` | debian/bookworm64 | Variables block at top of `$project_dir/python/Vagrantfile` |
-
 # Response Modes
 
 Certain user phrasings trigger a fixed response shape. When triggered, do NOT write a plan, create tasks, launch subagents, or take file/system actions — just produce the shape below.
