@@ -51,7 +51,7 @@ included with each Vagrantfile.
 
   1. For [project-specific] VMs, copy or symlink the desired Vagrantfile to
      the top level of the project you want to use it with (for example, copy or
-     symlink it where you cloned the [podman project] project for the [podman VM].
+     symlink it where you cloned the [podman project] for the [podman VM]).
 
   2. Update customizeable settings, if desired:
 

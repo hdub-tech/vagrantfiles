@@ -145,9 +145,9 @@ here. All of `claude.overrides/` is gitignored.
   `libreoffice-impress`, and `odfpy` packages for PDF/YAML/LibreOffice
   processing; added CLAUDE.md guidance to refer to the user by GitHub handle or
   neutral pronouns; added a memory entry reinforcing that only the human runs
-  git commit commands; disabled `respondToBashCommands` (token savings) fixed
-  TUI scrollback (`tui: "default"`) in `settings.json`; removed context killing
-  line breaks from CLAUDE.md and ignore line-length for Claude files
+  git commit commands; disabled `respondToBashCommands` (token savings) and
+  fixed TUI scrollback (`tui: "default"`) in `settings.json`; removed context
+  killing line breaks from CLAUDE.md and ignore line-length for Claude files
 
 <!-- markdownlint-disable MD013 -->
 <!-- Links -->
@@ -157,7 +157,7 @@ here. All of `claude.overrides/` is gitignored.
 [Per-user opinionated defaults]: #per-user-opinionated-defaults
 [Variables]:                     #variables
 [Vagrantfile]:                   ./Vagrantfile
-[Vagrantfile-vars]:              ./Vagrantfile#L18-L92
+[Vagrantfile-vars]:              ./Vagrantfile#L18-L91
 [bento/ubuntu-24.04]:            https://app.vagrantup.com/bento/boxes/ubuntu-24.04
 [containers/podman#24642]:       https://github.com/containers/podman/issues/24642
 [DRY]:                           https://en.wikipedia.org/wiki/Don%27t_repeat_yourself
