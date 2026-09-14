@@ -141,7 +141,13 @@ here. All of `claude.overrides/` is gitignored.
 ## Changelog
 
 * 1.0 - Initial Release
-* 2.0 - Bumped Claude Code to `2.1.267`; added `poppler-utils`, `yq`, `libreoffice-impress`, and `odfpy` packages for PDF/YAML/LibreOffice processing; added CLAUDE.md guidance to refer to the user by GitHub handle or neutral pronouns; added a memory entry reinforcing that only the human runs git commit commands; disabled `respondToBashCommands` (token savings) fixed TUI scrollback (`tui: "default"`) in `settings.json`
+* 2.0 - Bumped Claude Code to `2.1.267`; added `poppler-utils`, `yq`,
+  `libreoffice-impress`, and `odfpy` packages for PDF/YAML/LibreOffice
+  processing; added CLAUDE.md guidance to refer to the user by GitHub handle or
+  neutral pronouns; added a memory entry reinforcing that only the human runs
+  git commit commands; disabled `respondToBashCommands` (token savings) fixed
+  TUI scrollback (`tui: "default"`) in `settings.json`; removed context killing
+  line breaks from CLAUDE.md and ignore line-length for Claude files
 
 <!-- markdownlint-disable MD013 -->
 <!-- Links -->
