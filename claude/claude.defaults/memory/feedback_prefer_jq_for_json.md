@@ -23,5 +23,5 @@ parse JSON output from a CLI tool, run (or recall) `which jq` — if
 present, write the `jq` filter instead. This is about picking the right
 tool for simple JSON queries, not a blanket ban on Python — XML parsing,
 multi-file aggregation, or genuinely complex logic still warrant Python
-(e.g. the JUnit XML analysis in this session used Python because it
-needed `xml.etree`, which jq can't do).
+(e.g. a JUnit XML analysis used Python because it needed `xml.etree`,
+which jq can't do).

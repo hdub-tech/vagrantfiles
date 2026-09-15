@@ -11,11 +11,10 @@ request shape, etc. — go to the official documentation for that standard
 first, rather than pattern-matching off an existing example already in the
 repo or on disk.
 
-**Why:** caught while writing a new skill (`gh-ci-health-diff`). I had
-started reading a sibling `SKILL.md` (`loom-devops-verify`) and a bundled
-plugin skill to infer
-frontmatter conventions before writing the new one. The user stopped me:
-local examples may be stale, non-canonical, or just one author's style
+**Why:** caught while writing a new skill. I had started reading a
+sibling `SKILL.md` and a bundled plugin skill to infer frontmatter
+conventions before writing the new one. The user stopped me: local
+examples may be stale, non-canonical, or just one author's style
 choice — not the actual spec. Fetching the real Claude Code skills doc
 turned up fields (`arguments`, `argument-hint`, `disable-model-invocation`,
 the 1,536-char description+when_to_use cap, etc.) that wouldn't have

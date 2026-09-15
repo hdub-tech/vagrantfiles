@@ -1,0 +1,13 @@
+# Inherit repo-wide rules, then relax MD013 for this directory only.
+# https://github.com/DavidAnson/markdownlint-cli2#markdownlintjsonc-or-markdownlintjson
+extends: "../../.markdownlint.yaml"
+MD013: false
+
+# Claude gonna list how they want
+# https://github.com/DavidAnson/markdownlint/blob/v0.41.1/doc/md032.md
+MD032: false
+
+# First heading is in front matter
+# https://github.com/DavidAnson/markdownlint/blob/v0.41.1/doc/md041.md
+MD041:
+  front_matter_title: "^name:"

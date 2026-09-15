@@ -10,9 +10,11 @@
   "theme": "dark-daltonized",
   "verbose": true,
   "preferredNotifChannel": "auto",
+  "respondToBashCommands": false,
   "editorMode": "vim",
   "spinnerVerbs": {
     "mode": "replace",
     "verbs": ["Working"]
-  }
+  },
+  "tui": "default"
 }

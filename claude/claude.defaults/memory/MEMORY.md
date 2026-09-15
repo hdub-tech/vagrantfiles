@@ -1,6 +1,6 @@
 # Memory Index
 
-- [Memory location](feedback_memory_location.md) — read priority: project → user; user-level writes also back up to the vagrantfiles project's `claude.defaults/memory/` (if the project can be found on disk) so memories survive VM rebuilds
+- [Memory location](feedback_memory_location.md) — auto-memory is per-project only; `~/.claude/memory/` is a cross-project tier pulled in via `~/.claude/CLAUDE.md`, backed up to the vagrantfiles project's `claude.defaults/memory/` so it survives VM rebuilds
 - [Links section alphabetization](feedback_links_alphabetize.md) — ignore leading dots when sorting `<!-- Links -->` entries
 - [Junior dev upskilling sources](feedback_junior_dev_upskilling_sources.md) — always include an official doc link (MDN/Node/npm/OWASP/etc.) when pitching feedback at junior level
 - [Uncertainty callouts](feedback_uncertainty.md) — name the unsure part explicitly and suggest how to verify; don't hedge the whole answer
@@ -18,3 +18,6 @@
 - [Default to least privilege](feedback_least_privilege.md) — omit broad-privilege settings unless a specific need forces them; start minimal, escalate as a targeted fix
 - [Ansible test DRY](feedback_ansible_test_dry.md) — role-internal constants belong in vars/main.yml; tests load via task helper, never duplicate into fixtures
 - [Review output shape](feedback_review_output_shape.md) — a review is read-only analysis: never a plan file, never `ExitPlanMode`; What I verified → Findings → Verdict, then ask before showing "Not raised" / write actions needing consent
+- [User handles commits](feedback_user_handles_commits.md) — never commit and never ask "shall I commit?"; state "changes made, not committed" and stop
+- [Verify Claude Code features](feedback_verify_claude_code_features.md) — for claims about Claude Code itself, check docs, don't rely on recall
+- [Permission prompt hygiene](feedback_permission_prompts.md) — warn upfront before permission prompts stack; group related tool calls together

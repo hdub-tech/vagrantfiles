@@ -1,7 +1,7 @@
 #                           H Dub (hdub-tech) 2026
 #        Distributed under the Boost Software License, Version 1.0.
 # See accompanying file LICENSE or copy at https://www.boost.org/LICENSE_1_0.txt
-#                 My Claude dev environment - Version 1.0
+#                 My Claude dev environment - Version 2.0
 #
 # The following is constructed from the following sources:
 #   * https://podman.io/docs/installation#building-from-source
@@ -15,7 +15,7 @@
 # supply-chain compromises not yet detected. SHA256 is fetched at install time from:
 #   https://downloads.claude.ai/claude-code-releases/$version/manifest.json
 #   -> .platforms["linux-x64"].checksum
-$claude_version = "2.1.234"
+$claude_version = "2.1.267"
 
 # Get basename of current directory to be project name, or edit to hardcode.
 # This will be the hostname and part of the VM name.
@@ -39,22 +39,26 @@ $must_have_packages =" aspell \
   gh \
   jq \
   less \
+  libreoffice-impress \
   net-tools \
   openssl \
   pandoc \
   parallel \
+  poppler-utils \
   procyon-decompiler \
   qemu-utils \
   shellcheck \
   tree \
   unzip \
-  vim"
+  vim \
+  yq"
 
 # Set the desired Python version here
 $python_version = "3.14"
 # Ex) py312, like a tox target. If not using basic versions, you may want to edit this
 $python_version_abbrev = "py#{$python_version.split('.').first(2).join('')}"
 $pip_packages = [
+  "odfpy",
   "pylint",
   "uv",
   "zizmor"

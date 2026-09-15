@@ -7,8 +7,8 @@ metadata:
 
 Don't run a verification step (e.g. JSON well-formedness check, re-reading a
 file I just wrote) when the result doesn't actually matter to me or to the
-task. For hand-authored data files like FINDINGS.json, the user does not care
-whether it is strictly well-formed as long as I can make sense of it.
+task. For hand-authored data files, the user does not care whether one is
+strictly well-formed as long as I can make sense of it.
 
 **Why:** The user values not burning tool calls / attention on checks with no
 payoff. Honesty about outcomes is still expected — this is about skipping
