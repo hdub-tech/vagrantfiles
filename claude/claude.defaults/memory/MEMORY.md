@@ -20,3 +20,4 @@
 - [Review output shape](feedback_review_output_shape.md) — a review is read-only analysis: never a plan file, never `ExitPlanMode`; What I verified → Findings → Verdict, then ask before showing "Not raised" / write actions needing consent
 - [User handles commits](feedback_user_handles_commits.md) — never commit and never ask "shall I commit?"; state "changes made, not committed" and stop
 - [Verify Claude Code features](feedback_verify_claude_code_features.md) — for claims about Claude Code itself, check docs, don't rely on recall
+- [Permission prompt hygiene](feedback_permission_prompts.md) — warn upfront before permission prompts stack; group related tool calls together
