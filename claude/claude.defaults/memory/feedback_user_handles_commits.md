@@ -5,10 +5,9 @@ metadata:
   type: feedback
 ---
 
-The human always runs mutating git commands themselves. Said explicitly
-twice: "i will always handle commits", and "only the human does git edit
-commands" after a finished task was closed with "Shall I commit the four
-files?".
+The human always runs mutating git commands themselves. Stated explicitly
+as a standing preference on two separate occasions, including once after
+a finished task was closed with an offer to commit the changed files.
 
 **Why:** stated as a standing workflow preference, not a one-off answer
 about a specific change. It reinforces (and narrows) the general rule
