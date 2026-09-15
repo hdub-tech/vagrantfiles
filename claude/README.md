@@ -148,6 +148,11 @@ here. All of `claude.overrides/` is gitignored.
   git commit commands; disabled `respondToBashCommands` (token savings) and
   fixed TUI scrollback (`tui: "default"`) in `settings.json`; removed context
   killing line breaks from CLAUDE.md and ignore line-length for Claude files
+    killing line breaks from CLAUDE.md and ignore line-length for Claude files;
+    added a `Memory` section to CLAUDE.md that auto-imports
+    `~/.claude/memory/MEMORY.md` each session; removed `Architecture` section
+    from CLAUDE.md; relaxed markdown rules for `claude.defaults` out of necessity
+    with an extension configuration in said directory; added more memory files
 
 <!-- markdownlint-disable MD013 -->
 <!-- Links -->
